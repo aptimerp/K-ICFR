@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Smart-ICM | 금강공업 내부회계관리시스템</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  * { word-break: keep-all; }
+  html, body {
+    font-family: 'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(155,155,155,0.3); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(155,155,155,0.5); }
+  .page { display: none; }
+  .page.active { display: block; }
+  body.sidebar-collapsed aside#sidebar { width: 64px !important; }
+  body.sidebar-collapsed .sidebar-label,
+  body.sidebar-collapsed .section-label,
+  body.sidebar-collapsed .year-badge { display: none; }
+  body.sidebar-collapsed .nav-item { justify-content: center; }
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- 사이드바 -->
+  <aside id="sidebar" class="bg-white border-r border-gray-100 flex flex-col transition-all duration-300 ease-out overflow-hidden shrink-0" style="width:240px">
+    <div class="h-16 px-3 flex items-center justify-end border-b border-gray-100 shrink-0">
+      <button onclick="toggleSidebar()" class="p-2 rounded-xl text-gray-500 hover:bg-gray-50 transition-colors" title="사이드바 접기/펴기">
+        <i data-lucide="panel-left" class="w-4 h-4" stroke-width="1.5"></i>
+      </button>
+    </div>
+    <div class="px-4 pt-3 pb-1 year-badge">
+      <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-[11px] font-bold tracking-[0.15em] uppercase text-blue-600">2025 평가연도</span>
+    </div>
+    <nav class="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+      <a data-page="dashboard" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap mb-1 cursor-pointer bg-blue-50 text-blue-700" title="대시보드">
+        <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">대시보드</span>
+      </a>
+      <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 section-label pt-2">기준정보</div>
+      <a data-page="scoping" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="Scoping"><i data-lucide="target" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">Scoping</span></a>
+      <a data-page="rcm" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="RCM 관리"><i data-lucide="book-open" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">RCM 관리</span></a>
+      <a data-page="elc" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="ELC 관리"><i data-lucide="presentation" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">ELC 관리</span></a>
+      <a data-page="attachments" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="첨부 관리"><i data-lucide="paperclip" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">첨부 관리</span></a>
+      <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 section-label pt-2">설계평가</div>
+      <a data-page="design" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="설계평가"><i data-lucide="shield-check" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">설계평가 수행</span></a>
+      <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 section-label pt-2">운영평가</div>
+      <a data-page="population" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="모집단 관리"><i data-lucide="database" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">모집단 관리</span></a>
+      <a data-page="operations" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="운영평가 수행"><i data-lucide="clipboard-list" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">운영평가 수행</span></a>
+      <div class="px-3 py-1 section-label pt-2 flex items-center gap-1.5">
+        <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">증빙 관리</span>
+        <span class="inline-flex items-center px-1.5 py-0 rounded bg-cyan-50 border border-cyan-200 text-[9px] font-bold tracking-[0.1em] text-cyan-700">MAIN</span>
+      </div>
+      <a data-page="evidence-request" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="증빙 요청 관리"><i data-lucide="inbox" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">증빙 요청 관리</span></a>
+      <a data-page="evidence" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="증빙 제출"><i data-lucide="file-search" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">증빙 제출</span></a>
+      <a data-page="evidence-assign" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="제출담당자 지정"><i data-lucide="user-check" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">제출담당자 지정</span></a>
+      <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 section-label pt-2">결재</div>
+      <a data-page="approval-sent" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="결재 상신함"><i data-lucide="send" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">결재 상신함</span></a>
+      <a data-page="approval-inbox" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="결재 대상함"><i data-lucide="inbox" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">결재 대상함</span></a>
+      <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 section-label pt-2">결과 보고</div>
+      <a data-page="reports-exception" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="예외 보고"><i data-lucide="alert-octagon" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">예외 보고</span></a>
+      <a data-page="reports" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer" title="운영실태평가 보고"><i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0" stroke-width="1.5"></i><span class="sidebar-label">운영실태평가 보고</span></a>
+    </nav>
+  </aside>
+
+  <!-- 메인 -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 px-5 flex items-center justify-between shrink-0 relative z-20">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold" style="background:linear-gradient(135deg,#1D4ED8 0%,#06B6D4 100%)">K</div>
+          <span class="text-[11px] font-bold tracking-[0.3em] uppercase text-gray-900">SMART-ICM</span>
+        </div>
+        <div class="w-px h-5 bg-gray-200"></div>
+        <span id="page-title" class="text-sm font-semibold text-gray-900">대시보드</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold tracking-[0.1em] text-emerald-700">
+          <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>ERP 연동 정상
+        </span>
+        <button class="p-2 rounded-xl text-gray-500 hover:bg-gray-50 transition-colors relative">
+          <i data-lucide="bell" class="w-4 h-4" stroke-width="1.5"></i>
+          <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+        </button>
+        <div class="w-px h-5 bg-gray-200 mx-0.5"></div>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
+          <span class="text-xs font-semibold text-gray-900">장한나</span>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400" stroke-width="2"></i>
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-auto p-6">
+
+      <!-- 대시보드 -->
+      <div id="page-dashboard" class="page active">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="kpi-cards"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">PROCESS STATUS</div>
+                <h2 class="text-base font-semibold text-gray-900">프로세스별 운영평가 현황</h2>
+              </div>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-[11px] font-bold text-blue-600">전체 59%</span>
+            </div>
+            <div id="process-bars" class="space-y-3"></div>
+          </div>
+          <div class="flex flex-col gap-4">
+            <div class="bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+              <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-3">QUICK ACCESS</div>
+              <div class="grid grid-cols-2 gap-2">
+                <a data-page="evidence" class="cursor-pointer flex flex-col items-center gap-1.5 p-3 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 hover:shadow-sm"><i data-lucide="file-search" class="w-5 h-5" stroke-width="1.5"></i><span class="text-[11px] font-semibold">증빙 수집</span></a>
+                <a data-page="design" class="cursor-pointer flex flex-col items-center gap-1.5 p-3 rounded-xl bg-violet-50 text-violet-700 border border-violet-100 hover:shadow-sm"><i data-lucide="shield-check" class="w-5 h-5" stroke-width="1.5"></i><span class="text-[11px] font-semibold">설계평가</span></a>
+                <a data-page="operations" class="cursor-pointer flex flex-col items-center gap-1.5 p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 hover:shadow-sm"><i data-lucide="clipboard-list" class="w-5 h-5" stroke-width="1.5"></i><span class="text-[11px] font-semibold">운영평가</span></a>
+                <a data-page="reports" class="cursor-pointer flex flex-col items-center gap-1.5 p-3 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 hover:shadow-sm"><i data-lucide="bar-chart-3" class="w-5 h-5" stroke-width="1.5"></i><span class="text-[11px] font-semibold">결과 보고</span></a>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 flex-1" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+              <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-3">SCHEDULE</div>
+              <div class="space-y-3" id="schedule-list"></div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+          <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-rose-500 mb-3">⚠ DEFICIENCY</div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="def-list"></div>
+        </div>
+      </div>
+
+      <!-- RCM -->
+      <div id="page-rcm" class="page">
+        <div class="mb-5"><h1 class="text-xl font-bold text-gray-900 tracking-tight">RCM 관리</h1><p class="text-sm text-gray-500 mt-0.5">전체 402건의 통제활동을 조회·관리합니다</p></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4 mb-4" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+          <div class="relative mb-3">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" stroke-width="1.5"></i>
+            <input type="text" placeholder="통제코드 또는 통제명 검색..." class="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all">
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap" id="rcm-tabs"></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+          <div class="overflow-x-auto"><table class="w-full text-sm">
+            <thead><tr class="border-b border-gray-100 bg-gray-50/50" id="rcm-head"></tr></thead>
+            <tbody id="rcm-body" class="divide-y divide-gray-50"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- 증빙 수집 -->
+      <div id="page-evidence" class="page">
+        <div class="mb-5"><h1 class="text-xl font-bold text-gray-900 tracking-tight">증빙 수집</h1><p class="text-sm text-gray-500 mt-0.5">AI 자동 수집 + 수동 업로드 + AI 대조 + 결재 워크플로우</p></div>
+        <div class="flex items-center gap-3 px-4 py-3 bg-cyan-50 border border-cyan-100 rounded-2xl mb-4">
+          <i data-lucide="bot" class="w-4 h-4 text-cyan-600 shrink-0" stroke-width="1.5"></i>
+          <span class="text-sm text-cyan-900"><strong>AI 자동수집</strong>이 ERP에서 증빙을 자동으로 가져옵니다. 자동 증빙은 <strong>삭제 불가</strong>이며, 추가 증빙은 수동 업로드로 보완하세요.</span>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-4" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="font-mono text-sm font-bold text-blue-600">FA-012</span>
+            <h2 class="text-base font-semibold text-gray-900">고정자산 실사 대조</h2>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-100 text-[11px] font-bold">증빙수집중</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-gray-50/80 rounded-xl p-3 border border-gray-100"><div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">전표번호</div><div class="text-sm font-semibold">FA-2025-PHYS</div></div>
+            <div class="bg-gray-50/80 rounded-xl p-3 border border-gray-100"><div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">평가기간</div><div class="text-sm font-semibold">2025-03</div></div>
+            <div class="bg-gray-50/80 rounded-xl p-3 border border-gray-100"><div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">샘플 수</div><div class="text-sm font-semibold">10건</div></div>
+            <div class="bg-gray-50/80 rounded-xl p-3 border border-gray-100"><div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">승인자</div><div class="text-sm font-semibold">이차장</div></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div class="bg-white rounded-2xl border border-cyan-100" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+            <div class="px-4 py-3 border-b border-cyan-100 flex items-center gap-2">
+              <i data-lucide="zap" class="w-4 h-4 text-cyan-600" stroke-width="1.5"></i>
+              <span class="text-sm font-semibold text-cyan-900">AI 자동 수집 증빙</span>
+              <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-md bg-cyan-50 border border-cyan-200 text-[10px] font-bold text-cyan-700">1건</span>
+            </div>
+            <div class="p-4 space-y-2">
+              <div class="flex items-center gap-3 px-3 py-2.5 bg-cyan-50/50 rounded-xl border border-cyan-100">
+                <i data-lucide="file-text" class="w-4 h-4 text-cyan-600 shrink-0" stroke-width="1.5"></i>
+                <div class="flex-1 min-w-0"><div class="text-xs font-medium truncate">자산목록_2025Q1.xlsx</div><div class="text-[10px] text-gray-400">1.4MB</div></div>
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500" stroke-width="1.5"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-amber-100" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+            <div class="px-4 py-3 border-b border-amber-100 flex items-center gap-2">
+              <i data-lucide="upload" class="w-4 h-4 text-amber-600" stroke-width="1.5"></i>
+              <span class="text-sm font-semibold text-amber-900">수동 업로드 증빙</span>
+              <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-700">1건</span>
+            </div>
+            <div class="p-4">
+              <label class="flex flex-col items-center justify-center gap-2 w-full h-20 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/30 cursor-pointer hover:bg-amber-50 transition-colors mb-3">
+                <i data-lucide="upload" class="w-5 h-5 text-amber-400" stroke-width="1.5"></i>
+                <span class="text-xs text-amber-600 font-medium">파일 드래그 또는 클릭하여 업로드</span>
+              </label>
+              <div class="flex items-center gap-3 px-3 py-2.5 bg-amber-50/50 rounded-xl border border-amber-100">
+                <i data-lucide="file-text" class="w-4 h-4 text-amber-500 shrink-0" stroke-width="1.5"></i>
+                <div class="flex-1 min-w-0"><div class="text-xs font-medium truncate">실사조서_240315.pdf</div><div class="text-[10px] text-gray-400">3.2MB</div></div>
+                <button class="p-1 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5" stroke-width="1.5"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+          <div class="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+            <i data-lucide="git-compare" class="w-4 h-4 text-blue-600" stroke-width="1.5"></i>
+            <span class="text-sm font-semibold text-gray-900">AI 대조 결과</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 border border-blue-100 text-[10px] font-bold text-blue-600 ml-1">1/3 일치</span>
+          </div>
+          <div class="overflow-x-auto"><table class="w-full text-sm">
+            <thead><tr class="border-b border-gray-50 bg-gray-50/50">
+              <th class="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">항목</th>
+              <th class="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">ERP 값</th>
+              <th class="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">증빙 값</th>
+              <th class="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">결과</th>
+            </tr></thead>
+            <tbody class="divide-y divide-gray-50">
+              <tr><td class="px-5 py-3 font-medium">자산코드 FA-1023</td><td class="px-4 py-3 font-mono text-xs text-gray-600">존재</td><td class="px-4 py-3 font-mono text-xs text-gray-600">존재</td><td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700">✓ 일치</span></td></tr>
+              <tr class="bg-rose-50/30"><td class="px-5 py-3 font-medium">자산코드 FA-1089</td><td class="px-4 py-3 font-mono text-xs text-gray-600">존재</td><td class="px-4 py-3 font-mono text-xs text-rose-600 font-semibold">미확인</td><td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-[11px] font-bold text-rose-700">✗ 불일치</span></td></tr>
+              <tr class="bg-rose-50/30"><td class="px-5 py-3 font-medium">실사일자</td><td class="px-4 py-3 font-mono text-xs text-gray-600">2025-03-15</td><td class="px-4 py-3 font-mono text-xs text-rose-600 font-semibold">2025-03-20</td><td class="px-4 py-3"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-[11px] font-bold text-rose-700">✗ 불일치</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- 설계평가 -->
+      <div id="page-design" class="page">
+        <div class="mb-5"><h1 class="text-xl font-bold text-gray-900 tracking-tight">설계평가</h1><p class="text-sm text-gray-500 mt-0.5">통제활동 설계의 적정성을 평가합니다</p></div>
+        <div class="flex items-center gap-3 px-4 py-3 bg-rose-50 border border-rose-200 rounded-2xl mb-4">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 shrink-0" stroke-width="1.5"></i>
+          <span class="text-sm text-rose-800 font-medium">설계 취약 통제 <strong>3건</strong>이 있습니다. 즉시 보완 조치가 필요합니다.</span>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div class="rounded-2xl border bg-gray-50 border-gray-200 p-4"><div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500 mb-1">전체</div><span class="text-2xl font-bold">7</span><span class="text-sm text-gray-400 ml-1">건</span></div>
+          <div class="rounded-2xl border bg-emerald-50 border-emerald-200 p-4"><div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500 mb-1">적정</div><span class="text-2xl font-bold text-emerald-700">3</span><span class="text-sm text-gray-400 ml-1">건</span></div>
+          <div class="rounded-2xl border bg-rose-50 border-rose-200 p-4"><div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500 mb-1">취약</div><span class="text-2xl font-bold text-rose-700">3</span><span class="text-sm text-gray-400 ml-1">건</span></div>
+          <div class="rounded-2xl border bg-amber-50 border-amber-200 p-4"><div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500 mb-1">미완료</div><span class="text-2xl font-bold text-amber-700">1</span><span class="text-sm text-gray-400 ml-1">건</span></div>
+        </div>
+        <div class="space-y-2" id="design-list"></div>
+      </div>
+
+      <!-- 운영평가 -->
+      <div id="page-operations" class="page">
+        <div class="mb-5"><h1 class="text-xl font-bold text-gray-900 tracking-tight">운영평가 일정</h1><p class="text-sm text-gray-500 mt-0.5">통제별 운영평가 진행 현황을 관리합니다</p></div>
+        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+          <div class="divide-y divide-gray-50" id="ops-list"></div>
+        </div>
+      </div>
+
+      <!-- 결과보고 -->
+      <div id="page-reports" class="page">
+        <div class="mb-5"><h1 class="text-xl font-bold text-gray-900 tracking-tight">결과 보고</h1><p class="text-sm text-gray-500 mt-0.5">2025년도 내부회계관리제도 운영평가 결과</p></div>
+        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-0.5">PROCESS SUMMARY</div>
+            <h2 class="text-base font-semibold text-gray-900">프로세스별 평가 현황</h2>
+          </div>
+          <table class="w-full text-sm"><thead><tr class="border-b border-gray-100 bg-gray-50/50">
+            <th class="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">프로세스</th>
+            <th class="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">통제수</th>
+            <th class="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">설계율</th>
+            <th class="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">운영율</th>
+            <th class="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">미비점</th>
+          </tr></thead><tbody id="rep-body" class="divide-y divide-gray-50"></tbody></table>
+        </div>
+      </div>
+
+      <div id="page-evidence-master" class="page"><div class="max-w-md mx-auto bg-white border border-gray-100 rounded-2xl p-8 text-center mt-12"><div class="w-12 h-12 mx-auto rounded-2xl bg-blue-50 flex items-center justify-center mb-4"><i data-lucide="folder-open" class="w-6 h-6 text-blue-600"></i></div><h2 class="text-lg font-bold mb-2">증빙 마스터</h2><p class="text-sm text-gray-500">Phase 4에서 구현 예정 (710건 증빙 정의)</p></div></div>
+      <div id="page-population" class="page"><div class="max-w-md mx-auto bg-white border border-gray-100 rounded-2xl p-8 text-center mt-12"><div class="w-12 h-12 mx-auto rounded-2xl bg-blue-50 flex items-center justify-center mb-4"><i data-lucide="users" class="w-6 h-6 text-blue-600"></i></div><h2 class="text-lg font-bold mb-2">모집단 관리</h2><p class="text-sm text-gray-500">Phase 4에서 구현 예정</p></div></div>
+    </main>
+  </div>
+</div>
+
+<script>
+const PROCESSES = [
+  { code:"DC", label:"공시",         total:5,   done:5,  color:"bg-violet-500" },
+  { code:"FA", label:"고정자산",     total:24,  done:18, color:"bg-blue-600" },
+  { code:"FR", label:"재무보고",     total:31,  done:26, color:"bg-cyan-500" },
+  { code:"PI", label:"생산·재고",    total:123, done:78, color:"bg-teal-500" },
+  { code:"PP", label:"구매·지급",    total:48,  done:30, color:"bg-indigo-500" },
+  { code:"PR", label:"인사·급여",    total:22,  done:22, color:"bg-emerald-500" },
+  { code:"SD", label:"영업·매출",    total:98,  done:52, color:"bg-blue-500" },
+  { code:"TR", label:"자금",         total:44,  done:18, color:"bg-amber-500" },
+  { code:"TX", label:"세무",         total:7,   done:3,  color:"bg-rose-500" },
+];
+const SCHEDULE = [
+  { label:"운영평가 1차 마감", date:"2025.06.15", pct:72, color:"bg-blue-600" },
+  { label:"미비점 보완 기한",  date:"2025.06.30", pct:40, color:"bg-amber-500" },
+  { label:"이사회 보고",       date:"2025.07.10", pct:15, color:"bg-violet-500" },
+];
+const DEFICIENCIES = [
+  { code:"PI-C-2-1-3", title:"재고실사 결과 증빙 미흡",  level:"중요" },
+  { code:"TX-C-1-2-2", title:"법인세 신고·납부 검토 미흡", level:"중요" },
+  { code:"TR-C-1-1-2", title:"입금전표 승인 절차 누락",  level:"주의" },
+];
+const KPIS = [
+  { label:"총 통제항목",   val:402,   unit:"건", icon:"shield-check",  bg:"bg-blue-500",    note:"RCM 9프로세스" },
+  { label:"운영평가 완료", val:63,    unit:"%",  icon:"trending-up",   bg:"bg-emerald-500", note:"252/402건" },
+  { label:"결재 대기",     val:8,     unit:"건", icon:"clipboard-list",bg:"bg-amber-500",   note:"승인 필요" },
+  { label:"미비점",        val:3,     unit:"건", icon:"alert-triangle",bg:"bg-rose-500",    note:"조치 필요" },
+];
+const RCM_DATA = [
+  { code:"DC-C-1-1-1", process:"DC", title:"공시 관련법규 및 규정 개정",            cycle:"연간", type:"수동",   status:"완료" },
+  { code:"DC-C-1-1-3", process:"DC", title:"공시자료 검토 및 승인",                cycle:"수시", type:"수동",   status:"진행" },
+  { code:"FA-C-1-1-2", process:"FA", title:"고정자산 정보 등록/변경 승인",          cycle:"수시", type:"수동",   status:"진행" },
+  { code:"FR-C-1-3-1", process:"FR", title:"전표승인절차",                        cycle:"수시", type:"수동",   status:"결재중" },
+  { code:"PI-C-1-1-4", process:"PI", title:"Cost Center 주기적 검토 및 승인",       cycle:"분기", type:"수동",   status:"취약" },
+  { code:"PI-C-2-1-3", process:"PI", title:"재고실사 결과 검토 및 승인",            cycle:"연간", type:"수동",   status:"취약" },
+  { code:"PP-C-1-1-1", process:"PP", title:"신규 구매업체 선정 기준 적용",          cycle:"수시", type:"수동",   status:"완료" },
+  { code:"PR-C-1-1-3", process:"PR", title:"ERP 인사정보-급여대장 인원 대사",       cycle:"월간", type:"수동",   status:"완료" },
+  { code:"TR-C-1-1-2", process:"TR", title:"입금 전표의 승인",                    cycle:"수시", type:"수동",   status:"취약" },
+  { code:"TX-C-1-2-2", process:"TX", title:"법인세 신고 및 납부에 대한 승인",       cycle:"연간", type:"수동",   status:"취약" },
+];
+const DESIGN_DATA = [
+  { code:"DC-C-1-1-1", process:"DC", title:"공시 관련법규 및 규정 개정",       result:"적정",   score:95, note:"" },
+  { code:"FA-C-1-1-2", process:"FA", title:"고정자산 정보 등록/변경 승인",     result:"취약",   score:52, note:"통제활동 절차서 부재" },
+  { code:"FR-C-1-3-1", process:"FR", title:"전표승인절차",                    result:"취약",   score:45, note:"분기별 점검 주기 불명확" },
+  { code:"FR-C-1-1-1", process:"FR", title:"회계기준 제·개정사항 검토",      result:"적정",   score:90, note:"" },
+  { code:"PI-C-1-1-4", process:"PI", title:"Cost Center 주기적 검토",        result:"취약",   score:48, note:"검토 결과 문서화 부재" },
+  { code:"PR-C-1-1-3", process:"PR", title:"인사정보-급여대장 대사",          result:"적정",   score:96, note:"" },
+  { code:"TR-C-1-1-2", process:"TR", title:"입금 전표의 승인",                result:"취약",   score:58, note:"전표 첨부 증빙 누락" },
+  { code:"TX-C-1-2-2", process:"TX", title:"법인세 신고 및 납부 승인",        result:"미완료", score:0,  note:"" },
+];
+const OPS_DATA = [
+  { code:"DC-C-1-1-1", title:"공시 관련법규 및 규정 개정",  status:"결재완료",   sample:5,  done:5 },
+  { code:"FA-C-1-1-2", title:"고정자산 정보 등록/변경 승인", status:"결재완료",   sample:24, done:24 },
+  { code:"FR-C-1-3-1", title:"전표승인절차",               status:"증빙수집중", sample:25, done:13 },
+  { code:"PI-C-2-1-3", title:"재고실사 결과 검토",         status:"증빙수집중", sample:25, done:12 },
+  { code:"PP-C-1-1-1", title:"신규 구매업체 선정 기준",     status:"증빙수집중", sample:30, done:14 },
+  { code:"PR-C-1-1-3", title:"인사정보-급여대장 대사",      status:"결재완료",   sample:12, done:12 },
+  { code:"TR-C-1-1-2", title:"입금 전표의 승인",           status:"증빙수집중", sample:30, done:12 },
+  { code:"TX-C-1-2-2", title:"법인세 신고 및 납부 승인",   status:"미시작",     sample:0,  done:0 },
+];
+const REPORTS = [
+  { code:"DC", label:"공시",        total:5,   des:100, ops:100, def:0 },
+  { code:"FA", label:"고정자산",     total:24,  des:100, ops:75,  def:0 },
+  { code:"FR", label:"재무보고",     total:31,  des:97,  ops:84,  def:0 },
+  { code:"PI", label:"생산·재고",    total:123, des:96,  ops:63,  def:1 },
+  { code:"PR", label:"인사·급여",    total:22,  des:100, ops:100, def:0 },
+  { code:"TR", label:"자금",         total:44,  des:91,  ops:41,  def:1 },
+  { code:"TX", label:"세무",         total:7,   des:86,  ops:43,  def:1 },
+];
+const STATUS_STYLE = {
+  완료:"bg-emerald-50 text-emerald-700 border-emerald-200",
+  진행:"bg-blue-50 text-blue-700 border-blue-100",
+  결재중:"bg-amber-50 text-amber-700 border-amber-200",
+  미시작:"bg-gray-100 text-gray-600 border-gray-200",
+  취약:"bg-rose-50 text-rose-700 border-rose-200",
+  결재완료:"bg-emerald-50 text-emerald-700 border-emerald-200",
+  증빙수집중:"bg-cyan-50 text-cyan-700 border-cyan-100",
+};
+
+function renderKPI() {
+  document.getElementById('kpi-cards').innerHTML = KPIS.map(k => `
+    <div class="bg-white rounded-2xl p-5 border border-gray-100" style="box-shadow:0 4px 12px rgba(0,0,0,0.04)">
+      <div class="flex items-start justify-between mb-3">
+        <div class="w-10 h-10 rounded-xl ${k.bg} flex items-center justify-center" style="box-shadow:0 4px 10px rgba(0,0,0,0.12)">
+          <i data-lucide="${k.icon}" class="w-5 h-5 text-white" stroke-width="1.5"></i>
+        </div>
+        <span class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">${k.note}</span>
+      </div>
+      <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">${k.label}</div>
+      <div class="flex items-baseline gap-1"><span class="text-2xl font-bold">${k.val}</span><span class="text-sm text-gray-400">${k.unit}</span></div>
+    </div>
+  `).join('');
+}
+function renderDashboard() {
+  renderKPI();
+  document.getElementById('process-bars').innerHTML = PROCESSES.map(p => {
+    const pct = Math.round(p.done/p.total*100);
+    return `<div>
+      <div class="flex items-center justify-between text-xs mb-1">
+        <div class="flex items-center gap-2"><span class="font-bold text-gray-500 w-8">${p.code}</span><span class="text-gray-700 font-medium">${p.label}</span></div>
+        <div class="flex items-center gap-2 text-gray-500"><span>${p.done}/${p.total}건</span><span class="font-semibold text-gray-900 w-8 text-right">${pct}%</span></div>
+      </div>
+      <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full ${p.color} rounded-full" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('schedule-list').innerHTML = SCHEDULE.map(s => `
+    <div>
+      <div class="flex items-center justify-between text-xs mb-1"><span class="font-medium text-gray-700">${s.label}</span><span class="text-gray-400">${s.date}</span></div>
+      <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full ${s.color} rounded-full" style="width:${s.pct}%"></div></div>
+      <div class="text-[10px] text-gray-400 text-right mt-0.5">${s.pct}% 완료</div>
+    </div>
+  `).join('');
+  document.getElementById('def-list').innerHTML = DEFICIENCIES.map(d => `
+    <div class="p-3 rounded-xl bg-rose-50 border border-rose-100">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[11px] font-bold text-rose-600">${d.code}</span>
+        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md ${d.level==='중요'?'bg-rose-100 text-rose-700':'bg-amber-100 text-amber-700'}">${d.level}</span>
+      </div>
+      <p class="text-xs text-rose-800 font-medium">${d.title}</p>
+    </div>
+  `).join('');
+}
+function renderRCM() {
+  const procs = [{code:'전체',count:402}, ...PROCESSES.map(p=>({code:p.code,count:p.total}))];
+  document.getElementById('rcm-tabs').innerHTML = procs.map((p,i) =>
+    `<button class="px-3 py-1.5 rounded-xl text-xs font-semibold ${i===0?'bg-blue-600 text-white':'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'}">${p.code}<span class="ml-1 opacity-70">${p.count}</span></button>`
+  ).join('');
+  document.getElementById('rcm-head').innerHTML = ['통제코드','프로세스','통제활동명','주기','유형','상태']
+    .map(h => `<th class="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">${h}</th>`).join('');
+  document.getElementById('rcm-body').innerHTML = RCM_DATA.map(r => `
+    <tr class="hover:bg-gray-50/50">
+      <td class="px-4 py-3 font-mono text-xs font-bold text-blue-600">${r.code}</td>
+      <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100 text-[11px] font-bold">${r.process}</span></td>
+      <td class="px-4 py-3 text-gray-800 font-medium">${r.title}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs">${r.cycle}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs">${r.type}</td>
+      <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-bold ${STATUS_STYLE[r.status]}">${r.status}</span></td>
+    </tr>
+  `).join('');
+}
+function renderDesign() {
+  const STYLE = {
+    적정:['bg-emerald-50 text-emerald-700 border-emerald-200','check-circle-2','text-emerald-600'],
+    취약:['bg-rose-50 text-rose-700 border-rose-200','alert-triangle','text-rose-600'],
+    미완료:['bg-gray-100 text-gray-600 border-gray-200','clock','text-gray-400'],
+  };
+  document.getElementById('design-list').innerHTML = DESIGN_DATA.map(d => {
+    const [cls,icon,iconCls] = STYLE[d.result];
+    return `<div class="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all" style="box-shadow:0 1px 2px rgba(0,0,0,0.04)">
+      <i data-lucide="${icon}" class="w-5 h-5 ${iconCls}" stroke-width="1.5"></i>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-0.5"><span class="font-mono text-xs font-bold text-blue-600">${d.code}</span><span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 border border-blue-100 text-[10px] font-bold text-blue-600">${d.process}</span></div>
+        <p class="text-sm font-medium text-gray-800">${d.title}</p>
+        ${d.note?`<p class="text-xs text-rose-600 mt-0.5">⚠ ${d.note}</p>`:''}
+      </div>
+      ${d.result!=='미완료'?`<div class="text-right"><div class="text-xl font-bold">${d.score}</div><div class="text-[10px] text-gray-400">점</div></div>`:''}
+      <span class="inline-flex items-center px-2.5 py-1 rounded-md border text-[11px] font-bold ${cls}">${d.result}</span>
+    </div>`;
+  }).join('');
+}
+function renderOps() {
+  document.getElementById('ops-list').innerHTML = OPS_DATA.map(d => {
+    const pct = d.sample>0 ? Math.round(d.done/d.sample*100) : 0;
+    return `<div class="px-5 py-4 hover:bg-gray-50/50 transition-colors">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="font-mono text-xs font-bold text-blue-600">${d.code}</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-bold ${STATUS_STYLE[d.status]}">${d.status}</span>
+      </div>
+      <p class="text-sm font-medium text-gray-800 mb-1.5">${d.title}</p>
+      ${d.sample>0?`<div class="flex items-center gap-2"><div class="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden max-w-[200px]"><div class="h-full bg-blue-500 rounded-full" style="width:${pct}%"></div></div><span class="text-[10px] text-gray-400">${d.done}/${d.sample}건 (${pct}%)</span></div>`:''}
+    </div>`;
+  }).join('');
+}
+function renderReports() {
+  document.getElementById('rep-body').innerHTML = REPORTS.map(r => `
+    <tr class="hover:bg-gray-50/50">
+      <td class="px-5 py-4"><span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 border border-blue-100 text-[11px] font-bold text-blue-600">${r.code}</span> <span class="text-sm font-medium ml-2">${r.label}</span></td>
+      <td class="px-5 py-4 text-sm font-semibold">${r.total}건</td>
+      <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[80px]"><div class="h-full bg-violet-500 rounded-full" style="width:${r.des}%"></div></div><span class="text-sm font-semibold w-10 text-right">${r.des}%</span></div></td>
+      <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[80px]"><div class="h-full ${r.ops===100?'bg-emerald-500':'bg-blue-500'} rounded-full" style="width:${r.ops}%"></div></div><span class="text-sm font-semibold w-10 text-right">${r.ops}%</span></div></td>
+      <td class="px-5 py-4">${r.def>0?`<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-[11px] font-bold text-rose-700">${r.def}건</span>`:`<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700">없음</span>`}</td>
+    </tr>
+  `).join('');
+}
+
+const TITLES = {
+  dashboard:'대시보드',
+  scoping:'Scoping — 계정·위험평가',
+  rcm:'RCM 관리',
+  elc:'ELC 관리',
+  attachments:'첨부 관리',
+  design:'설계평가 수행',
+  population:'모집단 관리',
+  operations:'운영평가 수행',
+  'evidence-request':'증빙 요청 관리',
+  evidence:'증빙 제출',
+  'evidence-assign':'제출담당자 지정',
+  'approval-sent':'결재 상신함',
+  'approval-inbox':'결재 대상함',
+  'reports-exception':'예외 보고',
+  reports:'운영실태평가 보고',
+};
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('page-'+p);
+  if (el) el.classList.add('active');
+  document.getElementById('page-title').textContent = TITLES[p] || 'Smart-ICM';
+  document.querySelectorAll('.nav-item[data-page]').forEach(n => {
+    const active = n.dataset.page === p;
+    if (active) {
+      n.classList.remove('text-gray-600','font-medium','hover:bg-gray-50');
+      n.classList.add('bg-blue-50','text-blue-700','font-semibold');
+    } else {
+      n.classList.remove('bg-blue-50','text-blue-700','font-semibold');
+      n.classList.add('text-gray-600','font-medium','hover:bg-gray-50');
+    }
+  });
+  lucide.createIcons();
+}
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-collapsed');
+  const sb = document.getElementById('sidebar');
+  sb.style.width = document.body.classList.contains('sidebar-collapsed') ? '64px' : '240px';
+}
+
+renderDashboard();
+renderRCM();
+renderDesign();
+renderOps();
+renderReports();
+lucide.createIcons();
+document.querySelectorAll('[data-page]').forEach(el => {
+  el.addEventListener('click', e => { e.preventDefault(); showPage(el.dataset.page); });
+});
+</script>
+</body>
+</html>

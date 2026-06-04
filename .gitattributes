@@ -1,0 +1,29 @@
+# 텍스트 파일 — 체크아웃 시 CRLF, 저장소는 LF
+* text=auto
+
+# 소스코드
+*.js    text eol=lf
+*.jsx   text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.mjs   text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.sql   text eol=lf
+*.env*  text eol=lf
+
+# 바이너리 — diff/merge 제외
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.xlsx  binary
+*.xls   binary
+*.docx  binary
+*.pptx  binary
+*.ppt   binary
+*.zip   binary
