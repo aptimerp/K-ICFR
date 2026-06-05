@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart-ICM v8 메뉴 설계 미리보기</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { font-family: 'Pretendard', 'Pretendard Variable', system-ui, sans-serif; }
+  .tab-btn.active { background:#2563EB; color:#fff; }
+  .tab-btn { transition: all .18s; }
+  .panel-slide { transition: transform .25s cubic-bezier(.4,0,.2,1), opacity .25s; }
+  .panel-slide.hidden-panel { transform: translateX(100%); opacity:0; pointer-events:none; }
+  .menu-item:hover { background:#EFF6FF; }
+  .menu-item.active { background:#DBEAFE; color:#1D4ED8; font-weight:600; }
+  .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:9999px; font-size:11px; font-weight:600; }
+  .submenu { max-height:0; overflow:hidden; transition:max-height .2s ease; }
+  .submenu.open { max-height:600px; }
+  .arrow { transition:transform .2s; }
+  .arrow.open { transform:rotate(90deg); }
+  .change-badge { background:#FEF3C7; color:#92400E; border:1px solid #F59E0B; }
+  .new-badge { background:#DCFCE7; color:#166534; border:1px solid #22C55E; }
+  .section { display:none; }
+  .section.active { display:block; }
+  .ctrl-row { cursor:pointer; transition:background .12s; }
+  .ctrl-row:hover { background:#EFF6FF; }
+  .ctrl-row.selected { background:#DBEAFE; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- 상단 탭 네비 -->
+<div class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
+    <div class="flex items-center gap-3">
+      <span class="text-cyan-500 font-bold text-lg">Smart-ICM</span>
+      <span class="text-gray-300">|</span>
+      <span class="text-gray-600 text-sm font-medium">v8 설계 미리보기</span>
+    </div>
+    <div class="flex gap-1 bg-gray-100 rounded-lg p-1">
+      <button onclick="showSection('menu')" id="btn-menu" class="tab-btn active text-sm px-4 py-1.5 rounded-md font-medium">📋 메뉴 트리 비교</button>
+      <button onclick="showSection('panel')" id="btn-panel" class="tab-btn text-sm px-4 py-1.5 rounded-md font-medium text-gray-600">🖥️ 사이드 패널 UX</button>
+      <button onclick="showSection('erp')" id="btn-erp" class="tab-btn text-sm px-4 py-1.5 rounded-md font-medium text-gray-600">🔌 ERP 연동 모니터링</button>
+      <button onclick="showSection('flow')" id="btn-flow" class="tab-btn text-sm px-4 py-1.5 rounded-md font-medium text-gray-600">🔄 ERP/Excel 이중화 흐름</button>
+    </div>
+  </div>
+</div>
+
+<!-- ① 메뉴 트리 비교 -->
+<div id="sec-menu" class="section active max-w-7xl mx-auto px-6 py-8">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-1">메뉴 트리 v7 → v8 비교</h2>
+    <p class="text-sm text-gray-500">변경 항목은 배지로 표시. 클릭하면 변경 이유를 확인할 수 있습니다.</p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-6">
+    <!-- v7 -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="bg-gray-700 text-white px-5 py-3 flex items-center gap-2">
+        <span class="text-sm font-bold">IA v7 (현재)</span>
+        <span class="text-xs text-gray-300">탭 41개</span>
+      </div>
+      <div class="p-4 space-y-1 text-sm">
+        <div class="font-semibold text-gray-400 text-xs px-2 pt-1 pb-0.5">🏠 홈</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">1️⃣ 운영관리</div>
+        <div class="px-3 text-gray-500 text-xs">평가관리 › 평가기간관리</div>
+        <div class="px-3 text-gray-500 text-xs">평가관리 › 부서·사원관리</div>
+        <div class="px-3 text-gray-500 text-xs">평가관리 › 결재선관리</div>
+        <div class="px-3 text-gray-500 text-xs">RCM관리 › RCM지정 ⭐</div>
+        <div class="px-3 text-gray-500 text-xs">RCM관리 › RCM관리</div>
+        <div class="px-3 text-gray-500 text-xs">RCM관리 › RCM-부서Map</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">2️⃣ 설계평가관리 [준비중]</div>
+        <div class="px-3 text-gray-400 text-xs">사전준비 › 검토요청관리</div>
+        <div class="px-3 text-gray-400 text-xs">사전준비 › 통제수행자 지정</div>
+        <div class="px-3 text-gray-400 text-xs">사전준비 › 설계평가자 지정</div>
+        <div class="px-3 text-gray-400 text-xs">자체평가 / 설계평가 / 진행관리</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">3️⃣ 운영평가관리</div>
+        <div class="px-3 text-gray-500 text-xs">샘플링작업(6탭) › 모집단관리 외</div>
+        <div class="px-3 text-gray-500 text-xs">증빙제출(4탭) › 수집·AI검증·수행·승인</div>
+        <div class="px-3 text-gray-500 text-xs">운영평가(4탭) / 진행관리(3탭)</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">4️⃣ 결재관리</div>
+        <div class="px-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-xs py-0.5">내 할일 ← 홈에서도 보임, 메뉴도 있음</div>
+        <div class="px-3 text-gray-500 text-xs">상신함 / 결재함</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">5️⃣ 결과조회</div>
+        <div class="px-3 text-gray-500 text-xs">평가현황 6탭</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">6️⃣ 시스템관리</div>
+        <div class="px-3 text-gray-500 text-xs">사용자·권한 / 로그 / 증빙로그 / 환경설정</div>
+      </div>
+    </div>
+
+    <!-- v8 -->
+    <div class="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
+      <div class="bg-blue-700 text-white px-5 py-3 flex items-center gap-2">
+        <span class="text-sm font-bold">IA v8 (제안)</span>
+        <span class="text-xs text-blue-200">탭 43개 (+2)</span>
+        <span class="ml-auto text-xs bg-cyan-400 text-cyan-900 px-2 py-0.5 rounded-full font-semibold">검토중</span>
+      </div>
+      <div class="p-4 space-y-1 text-sm">
+        <div class="font-semibold text-gray-400 text-xs px-2 pt-1 pb-0.5">🏠 홈 <span class="change-badge badge ml-1">변경</span></div>
+        <div class="px-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-xs py-0.5">내 할일 완전 통합 — 홈이 실질 결재 처리 창구</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">1️⃣ 운영관리 <span class="text-gray-400 font-normal">← 평가 운영 설정</span></div>
+        <div class="px-3 text-gray-500 text-xs flex items-center gap-1">평가관리 › 평가기간관리 <span class="new-badge badge">차수복사 추가</span></div>
+        <div class="px-3 text-gray-500 text-xs">평가관리 › 부서·사원관리</div>
+        <div class="px-3 text-gray-500 text-xs">평가관리 › 결재선관리</div>
+        <div class="px-3 text-gray-500 text-xs">RCM관리 › RCM지정 ⭐</div>
+        <div class="px-3 text-gray-500 text-xs">RCM관리 › RCM관리</div>
+        <div class="px-3 text-gray-500 text-xs flex items-center gap-1">RCM관리 › RCM-부서Map <span class="change-badge badge">소프트게이트</span></div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">2️⃣ 설계평가관리 [준비중]</div>
+        <div class="px-3 text-gray-400 text-xs flex items-center gap-1">사전준비 › 통제수행자 지정 <span class="new-badge badge">Default Owner</span></div>
+        <div class="px-3 text-gray-400 text-xs">나머지 동일</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">3️⃣ 운영평가관리</div>
+        <div class="px-3 text-gray-500 text-xs flex items-center gap-1">샘플링작업 › 증빙제출자 지정 <span class="change-badge badge">차수별 override</span></div>
+        <div class="px-3 text-gray-500 text-xs flex items-center gap-1">증빙제출 › 증빙수집 <span class="new-badge badge">파일명 자동변환</span></div>
+        <div class="px-3 text-gray-500 text-xs">나머지 동일</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">4️⃣ 결재관리 <span class="change-badge badge">내 할일 제거</span></div>
+        <div class="px-3 text-gray-500 text-xs">상신함 / 결재함 (2개만)</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">5️⃣ 결과조회</div>
+        <div class="px-3 text-gray-500 text-xs">동일 (6탭)</div>
+
+        <div class="font-semibold text-blue-700 text-xs px-2 pt-3 pb-0.5">6️⃣ 시스템관리 <span class="text-gray-400 font-normal">← 시스템 제어+AI+ERP</span></div>
+        <div class="px-3 text-gray-500 text-xs">사용자·권한 (동일)</div>
+        <div class="px-3 bg-green-50 border border-green-200 rounded text-green-800 text-xs py-0.5 flex items-center gap-1">평가설정 <span class="new-badge badge">신규</span> › 통제별평가기준·파일명규칙</div>
+        <div class="px-3 bg-green-50 border border-green-200 rounded text-green-800 text-xs py-0.5 flex items-center gap-1">연동설정 <span class="new-badge badge">신규</span> › ERP API·AI검증 설정</div>
+        <div class="px-3 text-gray-500 text-xs">로그 / 증빙로그 / 환경설정</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 변경 요약 카드 -->
+  <div class="mt-6 grid grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl border border-amber-200 p-4">
+      <div class="text-amber-700 font-semibold text-sm mb-2">🔄 변경 (3건)</div>
+      <ul class="text-xs text-gray-600 space-y-1">
+        <li>• 홈 — 내 할일 완전 통합</li>
+        <li>• 결재관리 — 내 할일 탭 제거</li>
+        <li>• RCM-부서 Map — 소프트게이트</li>
+      </ul>
+    </div>
+    <div class="bg-white rounded-xl border border-green-200 p-4">
+      <div class="text-green-700 font-semibold text-sm mb-2">✨ 신규 추가 (4건)</div>
+      <ul class="text-xs text-gray-600 space-y-1">
+        <li>• 평가기간 차수 복사 기능</li>
+        <li>• 증빙 파일명 자동변환</li>
+        <li>• 시스템관리 › 평가설정</li>
+        <li>• 시스템관리 › 연동설정</li>
+      </ul>
+    </div>
+    <div class="bg-white rounded-xl border border-blue-200 p-4">
+      <div class="text-blue-700 font-semibold text-sm mb-2">📌 설계 원칙 반영</div>
+      <ul class="text-xs text-gray-600 space-y-1">
+        <li>• ERP API 1순위 / Excel 2순위</li>
+        <li>• Default Owner 자동 승계</li>
+        <li>• P5 비개발자 운영 최적화</li>
+        <li>• 데이터 구조 미리 확정</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ② 사이드 패널 UX -->
+<div id="sec-panel" class="section max-w-7xl mx-auto px-6 py-8">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-1">사이드 패널 UX 데모</h2>
+    <p class="text-sm text-gray-500">리스트에서 행을 클릭하면 기존 팝업 대신 우측 패널이 슬라이드됩니다.</p>
+  </div>
+
+  <!-- 홈 → 탭 이동 흐름 -->
+  <div class="flex items-center gap-2 mb-6 text-sm">
+    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">홈 — 내 할일</span>
+    <span class="text-gray-400">→</span>
+    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">증빙제출 승인 탭</span>
+    <span class="text-gray-400">→</span>
+    <span class="bg-blue-600 text-white px-3 py-1 rounded-full font-medium">통제 클릭 → 패널 오픈</span>
+    <span class="text-gray-400">→</span>
+    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium">승인/반려 완료</span>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <!-- 탭 헤더 -->
+    <div class="border-b border-gray-100 px-5 py-3 flex items-center gap-4">
+      <span class="text-sm font-semibold text-blue-700 border-b-2 border-blue-600 pb-1">증빙제출 승인</span>
+      <span class="text-xs text-gray-400">대기 5건 · 완료 12건</span>
+      <div class="ml-auto flex items-center gap-2">
+        <span class="text-xs text-gray-400">2026년 중간1차</span>
+        <button class="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1 rounded-lg">일괄 승인</button>
+      </div>
+    </div>
+
+    <div class="flex" style="height:460px">
+      <!-- 통제 리스트 -->
+      <div class="w-96 border-r border-gray-100 overflow-y-auto">
+        <div class="p-3 space-y-1">
+          <div id="row1" class="ctrl-row selected rounded-lg px-3 py-2.5 flex items-center gap-3" onclick="selectCtrl(1)">
+            <div class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-semibold text-gray-800 truncate">FR-C-1-1-1 · 전표승인통제</div>
+              <div class="text-xs text-gray-400">김민준 · 재무회계팀</div>
+            </div>
+            <span class="badge bg-amber-100 text-amber-700 flex-shrink-0">승인대기</span>
+          </div>
+          <div id="row2" class="ctrl-row rounded-lg px-3 py-2.5 flex items-center gap-3" onclick="selectCtrl(2)">
+            <div class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-semibold text-gray-800 truncate">FR-C-1-2-1 · 분개장 검토</div>
+              <div class="text-xs text-gray-400">이영희 · 재무회계팀</div>
+            </div>
+            <span class="badge bg-amber-100 text-amber-700 flex-shrink-0">승인대기</span>
+          </div>
+          <div id="row3" class="ctrl-row rounded-lg px-3 py-2.5 flex items-center gap-3" onclick="selectCtrl(3)">
+            <div class="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-semibold text-gray-800 truncate">FA-C-1-1-1 · 고정자산 등록</div>
+              <div class="text-xs text-gray-400">박지수 · 자산관리팀</div>
+            </div>
+            <span class="badge bg-red-100 text-red-700 flex-shrink-0">AI경고</span>
+          </div>
+          <div id="row4" class="ctrl-row rounded-lg px-3 py-2.5 flex items-center gap-3" onclick="selectCtrl(4)">
+            <div class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-semibold text-gray-800 truncate">FA-C-2-1-1 · 감가상각 검토</div>
+              <div class="text-xs text-gray-400">최민수 · 자산관리팀</div>
+            </div>
+            <span class="badge bg-amber-100 text-amber-700 flex-shrink-0">승인대기</span>
+          </div>
+          <div id="row5" class="ctrl-row rounded-lg px-3 py-2.5 flex items-center gap-3" onclick="selectCtrl(5)">
+            <div class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-semibold text-gray-800 truncate">PP-C-1-1-1 · 구매발주 승인</div>
+              <div class="text-xs text-gray-400">정한별 · 구매팀</div>
+            </div>
+            <span class="badge bg-amber-100 text-amber-700 flex-shrink-0">승인대기</span>
+          </div>
+          <div class="ctrl-row rounded-lg px-3 py-2.5 flex items-center gap-3 opacity-40">
+            <div class="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-semibold text-gray-800 truncate">FR-C-2-1-1 · 계정 조정</div>
+              <div class="text-xs text-gray-400">김민준 · 재무회계팀</div>
+            </div>
+            <span class="badge bg-green-100 text-green-700 flex-shrink-0">승인완료</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 사이드 패널 -->
+      <div id="side-panel" class="flex-1 overflow-y-auto panel-slide">
+        <div id="panel-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 bg-blue-50 rounded-xl border border-blue-200 p-4 text-sm text-blue-800">
+    💡 <strong>기존 팝업 vs 사이드 패널</strong>: 리스트가 왼쪽에 항상 보여 <strong>다음 건 처리가 클릭 1번</strong>으로 가능합니다. P2가 5건 연속 승인 시 페이지 이동 없이 전부 처리 완료.
+  </div>
+</div>
+
+<!-- ③ ERP 연동 모니터링 -->
+<div id="sec-erp" class="section max-w-7xl mx-auto px-6 py-8">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-1">ERP 연동 — 하이브리드 모니터링 구조</h2>
+    <p class="text-sm text-gray-500">평소엔 각 탭의 동기화 버튼 / 오류 발생 시엔 시스템관리에서 전체 진단</p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-6">
+    <!-- 분산형: 각 탭 -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100 bg-gray-50">
+        <span class="text-sm font-semibold text-gray-700">📍 분산형 — 각 탭에서 (평소 운영)</span>
+      </div>
+      <div class="p-5 space-y-4">
+        <!-- 부서·사원 -->
+        <div class="border border-gray-100 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-gray-700">부서·사원 관리 탭</span>
+            <button onclick="simulateSync('dept')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">🔄 ERP 동기화</button>
+          </div>
+          <div id="dept-result" class="text-xs text-gray-400">마지막 동기화: 2026-06-04 09:32 · 312건</div>
+        </div>
+        <!-- 모집단 -->
+        <div class="border border-gray-100 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-gray-700">모집단 관리 탭</span>
+            <button onclick="simulateSync('pop')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">🔄 ERP 동기화</button>
+          </div>
+          <div id="pop-result" class="text-xs text-gray-400">마지막 동기화: 2026-06-03 14:17 · 1,847건</div>
+        </div>
+        <!-- 증빙수집 -->
+        <div class="border border-gray-100 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-gray-700">증빙수집 탭</span>
+            <button onclick="simulateSync('evid')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">🔄 ERP 동기화</button>
+          </div>
+          <div id="evid-result" class="text-xs text-gray-400">마지막 동기화: 2026-06-04 08:50 · 234건</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 집중형: 시스템관리 -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100 bg-gray-50">
+        <span class="text-sm font-semibold text-gray-700">📊 집중형 — 시스템관리 › 연동설정 (오류 대응)</span>
+      </div>
+      <div class="p-5">
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+            <div class="text-green-600 text-xl font-bold">3</div>
+            <div class="text-xs text-green-700">정상</div>
+          </div>
+          <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+            <div class="text-red-600 text-xl font-bold">1</div>
+            <div class="text-xs text-red-700">오류</div>
+          </div>
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
+            <div class="text-gray-600 text-xl font-bold">0</div>
+            <div class="text-xs text-gray-500">대기중</div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center gap-3 px-3 py-2.5 bg-green-50 border border-green-100 rounded-lg text-xs">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <span class="flex-1 font-medium text-green-800">부서·사원 동기화</span>
+            <span class="text-green-600">06-04 09:32 · 정상</span>
+          </div>
+          <div class="flex items-center gap-3 px-3 py-2.5 bg-red-50 border border-red-100 rounded-lg text-xs">
+            <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+            <span class="flex-1 font-medium text-red-800">모집단 자동수신</span>
+            <span class="text-red-600">타임아웃 오류</span>
+            <button class="bg-red-100 text-red-700 px-2 py-0.5 rounded font-medium">재시도</button>
+          </div>
+          <div class="flex items-center gap-3 px-3 py-2.5 bg-green-50 border border-green-100 rounded-lg text-xs">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <span class="flex-1 font-medium text-green-800">증빙 자동수집</span>
+            <span class="text-green-600">06-04 08:50 · 정상</span>
+          </div>
+          <div class="flex items-center gap-3 px-3 py-2.5 bg-green-50 border border-green-100 rounded-lg text-xs">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <span class="flex-1 font-medium text-green-800">AI 검증 서비스</span>
+            <span class="text-green-600">응답속도 1.2s</span>
+          </div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button class="flex-1 text-xs bg-gray-100 text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-200">📋 오류 로그 복사</button>
+          <button class="flex-1 text-xs bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">🔄 전체 재시도</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 bg-blue-50 rounded-xl border border-blue-200 p-4 text-sm text-blue-800">
+    💡 <strong>하이브리드 구조</strong>: 평소엔 각 탭에서 동기화 버튼 클릭으로 충분. 오류 발생 시 각 탭의 오류 메시지에서 링크 클릭 → 시스템관리로 이동, 전체 상태 진단 및 IT 보고용 로그 캡처.
+  </div>
+</div>
+
+<!-- ④ ERP/Excel 이중화 흐름 -->
+<div id="sec-flow" class="section max-w-7xl mx-auto px-6 py-8">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-1">ERP API 1순위 / Excel Template 2순위 — 동일 결과 보장</h2>
+    <p class="text-sm text-gray-500">두 경로 모두 서버에서 같은 처리 함수를 통과 → 100% 동일 결과</p>
+  </div>
+
+  <!-- 흐름도 -->
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+    <div class="flex items-start gap-6">
+      <!-- ERP 경로 -->
+      <div class="flex-1">
+        <div class="bg-blue-600 text-white rounded-xl px-4 py-3 text-center mb-3">
+          <div class="text-xs text-blue-200 mb-0.5">1순위</div>
+          <div class="font-bold">ERP API 자동</div>
+        </div>
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-0.5 h-5 bg-blue-300"></div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-800 text-center w-full">SAC API 호출<br/><span class="text-blue-400">TRANSACTION_ID + DEPT_CODE</span></div>
+          <div class="w-0.5 h-5 bg-blue-300"></div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-800 text-center w-full">자동 수신<br/><span class="text-blue-400">source = 'ERP_AUTO'</span></div>
+        </div>
+      </div>
+
+      <!-- 화살표 + 공통 처리 -->
+      <div class="flex flex-col items-center pt-16 gap-2">
+        <div class="text-blue-400 text-lg">→</div>
+        <div class="text-gray-300">또는</div>
+        <div class="text-blue-400 text-lg">→</div>
+      </div>
+
+      <!-- Excel 경로 -->
+      <div class="flex-1">
+        <div class="bg-amber-500 text-white rounded-xl px-4 py-3 text-center mb-3">
+          <div class="text-xs text-amber-100 mb-0.5">2순위 (ERP 불가 시)</div>
+          <div class="font-bold">Excel Template 업로드</div>
+        </div>
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-0.5 h-5 bg-amber-300"></div>
+          <div class="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 text-center w-full">템플릿 다운로드<br/><span class="text-amber-400">ERP와 동일 컬럼 구조</span></div>
+          <div class="w-0.5 h-5 bg-amber-300"></div>
+          <div class="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 text-center w-full">파일 업로드<br/><span class="text-amber-400">source = 'EXCEL_UPLOAD'</span></div>
+        </div>
+      </div>
+
+      <!-- 화살표 -->
+      <div class="flex flex-col items-center pt-16">
+        <div class="text-gray-500 text-lg font-bold">→</div>
+      </div>
+
+      <!-- 공통 처리 -->
+      <div class="flex-1">
+        <div class="bg-gray-800 text-white rounded-xl px-4 py-3 text-center mb-3">
+          <div class="text-xs text-gray-300 mb-0.5">공통 (서버)</div>
+          <div class="font-bold">동일 처리 함수</div>
+        </div>
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-0.5 h-5 bg-gray-400"></div>
+          <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 text-center w-full">유효성 검증<br/><span class="text-gray-400">필수 컬럼 체크</span></div>
+          <div class="w-0.5 h-5 bg-gray-400"></div>
+          <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 text-center w-full">UPSERT<br/><span class="text-gray-400">중복 방지, 이력 기록</span></div>
+        </div>
+      </div>
+
+      <!-- 화살표 -->
+      <div class="flex flex-col items-center pt-16">
+        <div class="text-green-500 text-lg font-bold">→</div>
+      </div>
+
+      <!-- 결과 -->
+      <div class="flex-1">
+        <div class="bg-green-600 text-white rounded-xl px-4 py-3 text-center mb-3">
+          <div class="text-xs text-green-100 mb-0.5">결과</div>
+          <div class="font-bold">100% 동일 결과</div>
+        </div>
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-0.5 h-5 bg-green-300"></div>
+          <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs text-green-800 text-center w-full">Supabase 저장<br/><span class="text-green-600">source 컬럼으로 구분</span></div>
+          <div class="w-0.5 h-5 bg-green-300"></div>
+          <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs text-green-800 text-center w-full">감사 이력 자동 기록<br/><span class="text-green-600">누가·언제·어떤경로</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 탭별 적용 현황 -->
+    <div class="mt-8 border-t border-gray-100 pt-6">
+      <div class="text-sm font-semibold text-gray-700 mb-3">탭별 ERP API / Excel 이중화 적용 현황</div>
+      <div class="grid grid-cols-4 gap-3">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+          <div class="text-xs font-semibold text-blue-800 mb-2">부서·사원 관리</div>
+          <div class="space-y-1 text-xs">
+            <div class="flex items-center gap-1.5"><span class="w-4 h-4 bg-blue-600 text-white rounded text-center text-xs flex items-center justify-center">1</span> ERP API 동기화</div>
+            <div class="flex items-center gap-1.5"><span class="w-4 h-4 bg-amber-500 text-white rounded text-center text-xs flex items-center justify-center">2</span> Excel 업로드</div>
+          </div>
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+          <div class="text-xs font-semibold text-blue-800 mb-2">모집단 관리</div>
+          <div class="space-y-1 text-xs">
+            <div class="flex items-center gap-1.5"><span class="w-4 h-4 bg-blue-600 text-white rounded text-center text-xs flex items-center justify-center">1</span> ERP 자동 수신</div>
+            <div class="flex items-center gap-1.5"><span class="w-4 h-4 bg-amber-500 text-white rounded text-center text-xs flex items-center justify-center">2</span> 수기 모집단 Excel</div>
+          </div>
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+          <div class="text-xs font-semibold text-blue-800 mb-2">증빙수집</div>
+          <div class="space-y-1 text-xs">
+            <div class="flex items-center gap-1.5"><span class="w-4 h-4 bg-blue-600 text-white rounded text-center text-xs flex items-center justify-center">1</span> ERP 파일 자동수집</div>
+            <div class="flex items-center gap-1.5"><span class="w-4 h-4 bg-amber-500 text-white rounded text-center text-xs flex items-center justify-center">2</span> P1 수동 업로드</div>
+          </div>
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+          <div class="text-xs font-semibold text-blue-800 mb-2">결재선·RCM·담당자</div>
+          <div class="space-y-1 text-xs">
+            <div class="flex items-center gap-1.5"><span class="w-4 h-4 bg-gray-400 text-white rounded text-center text-xs flex items-center justify-center">-</span> ERP 마스터 참조</div>
+            <div class="flex items-center gap-1.5"><span class="w-4 h-4 bg-amber-500 text-white rounded text-center text-xs flex items-center justify-center">1</span> Excel 일괄 업로드</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 탭 전환
+function showSection(name) {
+  ['menu','panel','erp','flow'].forEach(s => {
+    document.getElementById('sec-'+s).classList.remove('active');
+    document.getElementById('btn-'+s).classList.remove('active');
+    document.getElementById('btn-'+s).classList.add('text-gray-600');
+  });
+  document.getElementById('sec-'+name).classList.add('active');
+  document.getElementById('btn-'+name).classList.add('active');
+  document.getElementById('btn-'+name).classList.remove('text-gray-600');
+}
+
+// 사이드 패널 데이터
+const panelData = {
+  1: {
+    code:'FR-C-1-1-1', title:'전표승인통제', submitter:'김민준 과장', dept:'재무회계팀',
+    date:'2026-06-03', ai:'✅ 정상', ai_color:'text-green-600 bg-green-50',
+    files:['FR-C-1-1-1_JV2026-001_1_전표승인.pdf','FR-C-1-1-1_JV2026-001_2_결재라인.pdf','FR-C-1-1-1_JV2026-001_3_원장.xlsx'],
+    note:'6월 전표 3건 모두 결재 완료 확인하였습니다.', warn: false
+  },
+  2: {
+    code:'FR-C-1-2-1', title:'분개장 검토', submitter:'이영희 대리', dept:'재무회계팀',
+    date:'2026-06-03', ai:'✅ 정상', ai_color:'text-green-600 bg-green-50',
+    files:['FR-C-1-2-1_JV2026-012_1_분개장.xlsx'],
+    note:'월별 분개장 검토 완료.', warn: false
+  },
+  3: {
+    code:'FA-C-1-1-1', title:'고정자산 등록', submitter:'박지수 사원', dept:'자산관리팀',
+    date:'2026-06-02', ai:'⚠️ 경고: 승인자 서명 누락', ai_color:'text-red-600 bg-red-50',
+    files:['FA-C-1-1-1_FA2026-008_1_자산등록서.pdf'],
+    note:'자산 등록 신청서 제출합니다.', warn: true
+  },
+  4: {
+    code:'FA-C-2-1-1', title:'감가상각 검토', submitter:'최민수 과장', dept:'자산관리팀',
+    date:'2026-06-03', ai:'✅ 정상', ai_color:'text-green-600 bg-green-50',
+    files:['FA-C-2-1-1_FA2026-009_1_감가상각표.xlsx','FA-C-2-1-1_FA2026-009_2_검토결과.pdf'],
+    note:'반기 감가상각 검토 완료하였습니다.', warn: false
+  },
+  5: {
+    code:'PP-C-1-1-1', title:'구매발주 승인', submitter:'정한별 사원', dept:'구매팀',
+    date:'2026-06-04', ai:'✅ 정상', ai_color:'text-green-600 bg-green-50',
+    files:['PP-C-1-1-1_PO2026-045_1_발주서.pdf'],
+    note:'구매 발주 건 제출합니다.', warn: false
+  }
+};
+
+function selectCtrl(n) {
+  [1,2,3,4,5].forEach(i => {
+    document.getElementById('row'+i)?.classList.remove('selected');
+  });
+  document.getElementById('row'+n)?.classList.add('selected');
+  renderPanel(panelData[n]);
+}
+
+function renderPanel(d) {
+  const fileList = d.files.map(f =>
+    `<div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-xs">
+      <span class="text-blue-500">📄</span>
+      <span class="flex-1 truncate text-gray-700">${f}</span>
+      <span class="text-gray-400 text-xs">보기</span>
+    </div>`
+  ).join('');
+
+  const warnBanner = d.warn ? `
+    <div class="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3 text-xs text-red-700 flex items-start gap-2">
+      <span>⚠️</span>
+      <span>AI 검증 경고: 승인자 서명이 파일에서 확인되지 않습니다. 반려 또는 보완 후 승인 권장.</span>
+    </div>` : '';
+
+  document.getElementById('panel-content').innerHTML = `
+    <div class="p-5">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">${d.code}</div>
+          <div class="text-base font-bold text-gray-900">${d.title}</div>
+          <div class="text-xs text-gray-500 mt-1">${d.submitter} · ${d.dept} · ${d.date} 제출</div>
+        </div>
+        <span class="text-xs px-2 py-1 rounded-lg ${d.ai_color}">${d.ai}</span>
+      </div>
+      ${warnBanner}
+      <div class="mb-4">
+        <div class="text-xs font-semibold text-gray-500 mb-2">증빙 파일 (자동변환명)</div>
+        <div class="space-y-1.5">${fileList}</div>
+      </div>
+      <div class="mb-5">
+        <div class="text-xs font-semibold text-gray-500 mb-2">제출 의견</div>
+        <div class="bg-gray-50 rounded-lg px-3 py-2.5 text-xs text-gray-700">${d.note}</div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="approveCtrl()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">✅ 승인</button>
+        <button onclick="rejectCtrl()" class="flex-1 bg-white border border-red-300 text-red-600 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors">❌ 반려</button>
+      </div>
+    </div>`;
+}
+
+function approveCtrl() {
+  const rows = [1,2,3,4,5];
+  const selected = rows.find(i => document.getElementById('row'+i)?.classList.contains('selected'));
+  if (!selected) return;
+  const row = document.getElementById('row'+selected);
+  const badge = row.querySelector('.badge');
+  badge.textContent = '승인완료';
+  badge.className = 'badge bg-green-100 text-green-700 flex-shrink-0';
+  row.classList.add('opacity-40');
+  row.classList.remove('selected');
+  // 다음 행 자동 선택
+  const next = rows.find(i => i > selected && !document.getElementById('row'+i)?.classList.contains('opacity-40'));
+  if (next) selectCtrl(next);
+  else document.getElementById('panel-content').innerHTML = '<div class="p-10 text-center text-gray-400 text-sm">모든 건 처리 완료 ✅</div>';
+}
+
+function rejectCtrl() {
+  document.getElementById('panel-content').innerHTML += `
+    <div id="reject-form" class="px-5 pb-5">
+      <div class="text-xs font-semibold text-gray-500 mb-2">반려 사유 입력</div>
+      <textarea class="w-full border border-gray-200 rounded-lg p-2 text-xs resize-none" rows="3" placeholder="반려 사유를 입력하세요..."></textarea>
+      <button onclick="confirmReject()" class="mt-2 w-full bg-red-600 text-white py-2 rounded-lg text-sm font-semibold">반려 확정</button>
+    </div>`;
+}
+
+function confirmReject() {
+  const rows = [1,2,3,4,5];
+  const selected = rows.find(i => document.getElementById('row'+i)?.classList.contains('selected'));
+  if (!selected) return;
+  const row = document.getElementById('row'+selected);
+  const badge = row.querySelector('.badge');
+  badge.textContent = '반려';
+  badge.className = 'badge bg-red-100 text-red-700 flex-shrink-0';
+  const dot = row.querySelector('.w-2.h-2.rounded-full');
+  dot.className = 'w-2 h-2 rounded-full bg-gray-400 flex-shrink-0';
+  row.classList.add('opacity-40');
+  row.classList.remove('selected');
+  const next = rows.find(i => i > selected && !document.getElementById('row'+i)?.classList.contains('opacity-40'));
+  if (next) selectCtrl(next);
+  else document.getElementById('panel-content').innerHTML = '<div class="p-10 text-center text-gray-400 text-sm">모든 건 처리 완료 ✅</div>';
+}
+
+// ERP 동기화 시뮬레이션
+function simulateSync(type) {
+  const el = document.getElementById(type+'-result');
+  el.innerHTML = '<span class="text-blue-600 animate-pulse">🔄 동기화 중...</span>';
+  setTimeout(() => {
+    const msgs = {
+      dept:'✅ 312건 수신 완료 · 방금 전',
+      pop:'❌ 타임아웃 오류 — <a href="#" class="text-blue-600 underline" onclick="showSection(\'erp\');return false;">연동설정에서 확인 →</a>',
+      evid:'✅ 89건 수신 완료 · 방금 전'
+    };
+    el.innerHTML = `<span class="text-xs">${msgs[type]}</span>`;
+  }, 1500);
+}
+
+// 초기 패널 렌더
+renderPanel(panelData[1]);
+</script>
+</body>
+</html>

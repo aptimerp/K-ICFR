@@ -1,5 +1,6 @@
 # Smart-ICM Supabase DB 스키마 설계
-> Phase 7 | 2026-05-29 | IA v6 메뉴 + ERP ICM_SAMPLE_POPULATION_DT 기반
+> Phase 7 | 2026-05-29 최초 작성 | 2026-06-04 rcm_dept_map → 2테이블 분리 반영
+> IA v7 메뉴 + ERP ICM_SAMPLE_POPULATION_DT 기반 | **현재 테이블 수: 15개**
 
 ---
 
@@ -16,22 +17,26 @@
 
 ## 테이블 목록 (의존성 순)
 
-| # | 테이블명 | 설명 | IA 메뉴 연결 |
-|---|---------|------|-------------|
-| 1 | `eval_terms` | 평가기간 마스터 | 1️⃣ 평가기간 관리 |
-| 2 | `departments` | 부서 마스터 | 1️⃣ **부서·사원 관리** (ERP 수신 원본) |
-| 3 | `users` | 사용자 (P1~P5 페르소나) | 6️⃣ **사용자·권한 > 사용자 관리** |
-| 4 | `rcm_controls` | RCM 402건 통제 마스터 | 1️⃣ RCM 관리 |
-| 5 | `rcm_dept_map` | RCM-부서 매핑 | 1️⃣ RCM-부서 Map |
-| 6 | `rcm_snapshots` | RCM 버전 락 (평가 직전 고정) | 1️⃣ RCM 지정 ⭐ |
-| 7 | `populations` | 모집단 (ERP 자동 + 엑셀 업로드) | 3️⃣ 모집단 관리 |
-| 8 | `samples` | 샘플링 결과 | 3️⃣ 샘플링 작업 |
-| 9 | `evidence_files` | 증빙 첨부 파일 | 3️⃣ 증빙수집 |
-| 10 | `evidence_submissions` | 증빙제출 수행·승인 | 3️⃣ 증빙제출 수행/승인 |
-| 11 | `op_evaluations` | 운영평가 수행 결과 | 3️⃣ 운영평가 수행 |
-| 12 | `deficiencies` | 예외·미비점 4분류 | 3️⃣ 예외보고·미비점 검토 |
-| 13 | `approvals` | 결재 워크플로우 | 4️⃣ 결재관리 |
-| 14 | `audit_logs` | 전체 변경 이력 | 6️⃣ 로그 |
+| # | 테이블명 | 설명 | IA 메뉴 연결 | 변경 |
+|---|---------|------|-------------|:----:|
+| 1 | `eval_terms` | 평가기간 마스터 | 1️⃣ 평가기간 관리 | |
+| 2 | `departments` | 부서 마스터 | 1️⃣ **부서·사원 관리** (ERP 수신 원본) | |
+| 3 | `users` | 사용자 (P1~P5 페르소나) | 6️⃣ **사용자·권한 > 사용자 관리** | |
+| 4 | `rcm_controls` | RCM 402건 통제 마스터 | 1️⃣ RCM 관리 | |
+| 5 | ~~`rcm_dept_map`~~ → **`rcm_default_owners`** | 기본 담당자 (차수 없음) | 2️⃣ 설계평가 > 통제수행자 지정 | 🆕 분리 |
+| 6 | **`rcm_term_assignments`** | 차수별 담당자 (is_override 패턴) | 3️⃣ 샘플링작업 > 증빙제출자 지정 | 🆕 분리 |
+| 7 | `rcm_snapshots` | RCM 버전 락 (평가 직전 고정) | 1️⃣ RCM 지정 ⭐ | |
+| 8 | `populations` | 모집단 (ERP 자동 + 엑셀 업로드) | 3️⃣ 모집단 관리 | |
+| 9 | `samples` | 샘플링 결과 | 3️⃣ 샘플링 작업 | |
+| 10 | `evidence_files` | 증빙 첨부 파일 | 3️⃣ 증빙수집 | |
+| 11 | `evidence_submissions` | 증빙제출 수행·승인 | 3️⃣ 증빙제출 수행/승인 | |
+| 12 | `op_evaluations` | 운영평가 수행 결과 | 3️⃣ 운영평가 수행 | |
+| 13 | `deficiencies` | 예외·미비점 4분류 | 3️⃣ 예외보고·미비점 검토 | |
+| 14 | `approvals` | 결재 워크플로우 | 4️⃣ 결재관리 | |
+| 15 | `audit_logs` | 전체 변경 이력 | 6️⃣ 로그 | |
+
+> ⚠️ **2026-06-04 변경**: `rcm_dept_map` 1개 → `rcm_default_owners` + `rcm_term_assignments` 2개로 분리.
+> 기존 `supabase/migrations/001_initial_schema.sql`의 `rcm_dept_map` DDL은 004번 마이그레이션으로 교체 예정.
 
 ---
 
@@ -121,20 +126,63 @@ CREATE INDEX idx_rcm_ctrl_kind ON rcm_controls(ctrl_kind);
 
 ---
 
-## 5. `rcm_dept_map` — RCM-부서 매핑
+## 5. `rcm_default_owners` — RCM 기본 담당자 🆕 (2026-06-04, rcm_dept_map 분리)
+
+> **역할**: 통제-부서별 기본 P1(통제수행자)·P2(통제책임자) 지정. 차수 없음 (영구 기준값).
+> **관리 위치**: 설계평가 > 사전준비 > 통제수행자 지정 탭 (P5 전용)
+> **규칙**: 차수 시작 시 이 테이블 기준으로 `rcm_term_assignments` 자동 생성
 
 ```sql
-CREATE TABLE rcm_dept_map (
+CREATE TABLE rcm_default_owners (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ctrl_code     TEXT NOT NULL REFERENCES rcm_controls(ctrl_code),
   dept_code     TEXT NOT NULL REFERENCES departments(dept_code),
-  assignee_id   UUID REFERENCES users(id),   -- 통제수행자 (P1)
-  approver_id   UUID REFERENCES users(id),   -- 통제책임자 (P2)
-  eval_term_id  UUID REFERENCES eval_terms(id),
+  default_p1_id UUID REFERENCES users(id),   -- 기본 통제수행자 (P1)
+  default_p2_id UUID REFERENCES users(id),   -- 기본 통제책임자 (P2)
   created_at    TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(ctrl_code, dept_code, eval_term_id)
+  updated_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(ctrl_code, dept_code)               -- 통제·부서 조합은 고유
 );
+CREATE INDEX idx_default_owners_ctrl ON rcm_default_owners(ctrl_code);
+CREATE INDEX idx_default_owners_dept ON rcm_default_owners(dept_code);
 ```
+
+---
+
+## 6. `rcm_term_assignments` — 차수별 담당자 🆕 (2026-06-04, rcm_dept_map 분리)
+
+> **역할**: 차수별 실제 P1·P2 지정. `rcm_default_owners`에서 자동 승계 후 차수별 override 가능.
+> **관리 위치**: 샘플링작업 > 증빙제출자 지정 탭 (P5 전용)
+> **핵심 패턴**:
+> - 차수 시작 시 `is_override = false`로 자동 생성 (default_owner 복사)
+> - P5가 차수별 변경 시 `is_override = true` 격리, `original_p1_id`로 원본 유지
+> - 변경 취소 시 `is_override = false`로 즉시 원복
+
+```sql
+CREATE TABLE rcm_term_assignments (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  eval_term_id    UUID NOT NULL REFERENCES eval_terms(id),
+  ctrl_code       TEXT NOT NULL REFERENCES rcm_controls(ctrl_code),
+  dept_code       TEXT NOT NULL REFERENCES departments(dept_code),
+  p1_id           UUID REFERENCES users(id),   -- 현재 차수의 통제수행자
+  p2_id           UUID REFERENCES users(id),   -- 현재 차수의 통제책임자
+  original_p1_id  UUID REFERENCES users(id),   -- 기본값 원본 (읽기 전용 표시용)
+  original_p2_id  UUID REFERENCES users(id),   -- 기본값 원본 (읽기 전용 표시용)
+  is_override     BOOL NOT NULL DEFAULT false, -- true: P5가 차수별 변경한 건
+  override_reason TEXT,                        -- 변경 사유 (is_override=true 시)
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(eval_term_id, ctrl_code, dept_code)
+);
+CREATE INDEX idx_term_assign_term ON rcm_term_assignments(eval_term_id);
+CREATE INDEX idx_term_assign_ctrl ON rcm_term_assignments(ctrl_code, dept_code);
+```
+
+> **마이그레이션 계획**: `004_rcm_owner_split.sql`로 신규 작성
+> - Step 1: 두 테이블 CREATE
+> - Step 2: 기존 `rcm_dept_map` 데이터 → `rcm_default_owners` 이관
+> - Step 3: 기존 `rcm_dept_map` RENAME → `rcm_dept_map_deprecated` (즉시 DROP 하지 않음)
+> - Step 4: 코드에서 `rcm_dept_map` 참조 교체 후 최종 DROP
 
 ---
 
@@ -374,18 +422,26 @@ CREATE INDEX idx_audit_changed_at ON audit_logs(changed_at DESC);
 |--------|------|----------|
 | `evidence-files` | 증빙 첨부 파일 | 비공개 (Signed URL) |
 | `rcm-templates` | RCM 엑셀 템플릿 | 비공개 |
-| `report-exports` | 평가 결과 보고서 ZIP | 비공개 |
+| `report-exports` | 평가 결과 보고서 ZIP / 통합 엑셀 다운로드 | 비공개 |
+
+> **`report-exports` 용도 확장** (2026-06-05): 기존 ZIP(감사패키지) 외 **통합 엑셀 다운로드** 파일도 이 버킷에 저장.
+> 통합 엑셀 = Sheet1(모집단·샘플링 현황) + SheetN(통제별 증빙목록·AI검증결과·P3평가의견) — ExcelJS로 서버사이드 생성.
 
 ---
 
-## Phase 7 마이그레이션 파일 계획
+## 마이그레이션 파일 계획 (2026-06-05 업데이트)
 
 ```
 supabase/
 ├── migrations/
-│   ├── 001_initial_schema.sql   ← 전체 DDL (본 문서 기반)
-│   ├── 002_rls_policies.sql     ← RLS 정책 (페르소나별)
-│   └── 003_audit_triggers.sql   ← 변경이력 트리거
+│   ├── 001_initial_schema.sql      ← 전체 DDL (14개 테이블, Phase 7 기준)
+│   ├── 002_rls_policies.sql        ← RLS 정책 (페르소나별 P1~P5)
+│   ├── 003_audit_triggers.sql      ← 변경이력 트리거
+│   └── 004_rcm_owner_split.sql     ← 🆕 rcm_dept_map → default_owners + term_assignments 분리
+│                                       (rcm_dept_map은 deprecated 처리, 즉시 DROP 안 함)
 └── seeds/
-    └── rcm_controls.sql         ← RCM 402건 시딩
+    └── rcm_controls.sql            ← RCM 402건 시딩
 ```
+
+> **실행 순서**: 001 → 002 → 003 → 004 (Supabase 계정 수령 후 SQL Editor에서 순차 실행)
+> **현재 상태**: 001~003 SQL 파일 작성 완료, 004 미작성 (DB 스키마 확정 후 작성 예정)
