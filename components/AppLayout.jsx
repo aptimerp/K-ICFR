@@ -23,7 +23,10 @@ import {
   TrendingUp,
   Wrench,
   AlertTriangle,
+  CalendarRange,
+  Lock,
 } from "lucide-react";
+import { EVAL_TERMS, useEvalTerm } from "@/components/evalTerms";
 
 /* ─────────────────────────────────────────────────────────────
    v6 내비게이션 구조  (IA v6 확정, 2026-05-21)
@@ -78,7 +81,6 @@ const NAV = [
     badge: null,
     disabled: false,
     items: [
-      { href: "/approval/todo",  label: "내 할일" },
       { href: "/approval/sent",  label: "상신함" },
       { href: "/approval/inbox", label: "결재함" },
     ],
@@ -110,9 +112,6 @@ const NAV = [
     ],
   },
 ];
-
-/* 차수 토글을 헤더에 노출할 그룹 경로 prefix */
-const TERM_TOGGLE_PREFIXES = ["/op-eval", "/results"];
 
 /* 개발용 페르소나 목록 */
 const PERSONAS = [
@@ -149,8 +148,8 @@ export default function AppLayout({ children }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   /* 개발용 페르소나 */
   const [persona,      setPersona]      = useState("P5");
-  /* 차수 토글 */
-  const [evalTerm,     setEvalTerm]     = useState("중간1");
+  /* 전역 통제기간(평가기간) — 모든 페이지 공통 (A안) */
+  const { termId, isClosed, setTermId } = useEvalTerm();
 
   /* localStorage 복원 */
   useEffect(() => {
@@ -201,9 +200,6 @@ export default function AppLayout({ children }) {
   const activeGroup = NAV.find((g) => g.id === getActiveGroup(pathname));
   const activeItem  = NAV.flatMap((g) => g.items).find((i) => pathname.startsWith(i.href));
   const pageTitle   = activeItem?.label ?? (pathname === "/" ? "홈" : "Smart-ICM");
-
-  /* 차수 토글 노출 여부 */
-  const showTermToggle = TERM_TOGGLE_PREFIXES.some((p) => pathname.startsWith(p));
 
   /* 현재 페르소나 정보 */
   const currentPersona = PERSONAS.find((p) => p.id === persona) ?? PERSONAS[0];
@@ -376,27 +372,28 @@ export default function AppLayout({ children }) {
             <span className="text-sm font-semibold text-gray-900">{pageTitle}</span>
           </div>
 
-          {/* 우: 차수 토글 + ERP 상태 + 알림 + 사용자 */}
+          {/* 우: 통제기간 전역 셀렉터 + ERP 상태 + 알림 + 사용자 */}
           <div className="flex items-center gap-2">
 
-            {/* 차수 토글 — 운영평가관리·결과조회 그룹에서만 노출 */}
-            {showTermToggle && (
-              <div className="hidden md:flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                {["중간1", "중간2", "기말"].map((term) => (
-                  <button
-                    key={term}
-                    onClick={() => setEvalTerm(term)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
-                      evalTerm === term
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    {term}
-                  </button>
+            {/* 통제기간 전역 셀렉터 — 모든 페이지 공통 (A안) */}
+            <div className="hidden md:flex items-center gap-1.5">
+              <CalendarRange className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+              <select
+                value={termId}
+                onChange={(e) => setTermId(e.target.value)}
+                className="border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 max-w-[15rem] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                title="통제기간 선택 (전체 화면 공통 적용)"
+              >
+                {EVAL_TERMS.map((t) => (
+                  <option key={t.id} value={t.id}>{t.closed ? `[마감] ${t.label}` : t.label}</option>
                 ))}
-              </div>
-            )}
+              </select>
+              {isClosed && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-600" title="마감된 통제기간은 조회만 가능합니다">
+                  <Lock className="w-3 h-3" /> 조회전용
+                </span>
+              )}
+            </div>
 
             {/* ERP 연동 상태 */}
             <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold tracking-[0.1em] text-emerald-700">

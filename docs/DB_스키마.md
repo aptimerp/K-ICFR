@@ -12,6 +12,9 @@
 4. **통제 유형 3종** — `PLC`(XX-C-...) / `ITGC`(IT-C-...) / `ELC`
 5. **ERP 원본 수정 금지** — Supabase는 Smart-ICM 전용, ERP는 API 조회만
 6. **RLS 활성화** — 테이블별 Row Level Security 정책 적용
+7. **평가기간 격리** (R8) — 모든 결재·평가 트랜잭션은 `eval_term_id` FK로 격리. 조회는 항상 `WHERE eval_term_id = 선택기간`. 과거/현재 데이터 비충돌
+8. **거래시점 스냅샷 보존** (R8) — 담당자(상신자·결재자)·조직(부서)은 FK만 두지 말고 **거래 시점의 이름·직위·부서명을 트랜잭션 행에 스냅샷 저장**. 퇴사·부서이동·조직개편에도 과거 화면 정확 재현
+9. **마감기간 조회전용** (R8) — `eval_terms.is_active=false`(마감) 기간은 앱 레벨에서 변경 액션 차단. "마감된 통제기간은 조회만 가능합니다"
 
 ---
 
@@ -284,9 +287,14 @@ CREATE TABLE evidence_submissions (
   sample_id       UUID NOT NULL REFERENCES samples(id) UNIQUE,
   eval_term_id    UUID NOT NULL REFERENCES eval_terms(id),
   submitted_by    UUID REFERENCES users(id),  -- P1 통제수행자
+  -- R8 거래시점 스냅샷
+  submitter_name  TEXT,                       -- 상신 시점 상신자 성명
+  submitter_dept  TEXT,                       -- 상신 시점 소속 부서명
   submitted_at    TIMESTAMPTZ,
   submission_note TEXT,
   approved_by     UUID REFERENCES users(id),  -- P2 통제책임자
+  approver_name   TEXT,                       -- 결재 시점 결재자 성명 (스냅샷)
+  approver_dept   TEXT,                       -- 결재 시점 부서명 (스냅샷)
   approved_at     TIMESTAMPTZ,
   approval_note   TEXT,
   status          TEXT NOT NULL DEFAULT 'DRAFT'
@@ -365,14 +373,20 @@ CREATE TABLE approvals (
     'RCM_SNAPSHOT'
   )),
   ref_id          UUID NOT NULL,
+  eval_term_id    UUID NOT NULL REFERENCES eval_terms(id),  -- R8 평가기간 격리 (조회 스코프 키)
   step_order      INT  NOT NULL DEFAULT 1,
   approver_id     UUID NOT NULL REFERENCES users(id),
+  -- R8 거래시점 스냅샷 (퇴사·부서이동·조직개편에도 과거 화면 정확 재현)
+  approver_name   TEXT,                       -- 결재 시점 결재자 성명
+  approver_pos    TEXT,                       -- 결재 시점 직위
+  approver_dept   TEXT,                       -- 결재 시점 소속 부서명
   status          TEXT NOT NULL DEFAULT 'PENDING'
                   CHECK (status IN ('PENDING','APPROVED','REJECTED','DELEGATED')),
   action_at       TIMESTAMPTZ,
-  action_note     TEXT,
+  action_note     TEXT,                       -- 결재 의견 (반려 시 필수 — 앱 레벨 검증)
   created_at      TIMESTAMPTZ DEFAULT now()
 );
+CREATE INDEX idx_approvals_term ON approvals(eval_term_id);
 CREATE INDEX idx_approvals_approver ON approvals(approver_id, status);
 CREATE INDEX idx_approvals_ref ON approvals(ref_type, ref_id);
 ```

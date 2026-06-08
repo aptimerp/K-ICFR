@@ -75,21 +75,36 @@ function P1Home() {
         </Link>
       </div>
 
-      {/* 작은 카드 */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link href="/approval/todo" className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 hover:shadow-sm transition-shadow">
-          <Clock className="w-5 h-5 text-amber-500" />
-          <div>
-            <div className="text-xs text-gray-500">내 할일</div>
-            <div className="text-base font-bold text-gray-900">4건 <span className="text-xs font-normal text-gray-400">처리 대기</span></div>
-          </div>
-        </Link>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
-          <BarChart3 className="w-5 h-5 text-blue-500" />
-          <div>
-            <div className="text-xs text-gray-500">내 진행 상태</div>
-            <div className="text-base font-bold text-gray-900">5/8 <span className="text-xs font-normal text-gray-400">완료</span></div>
-          </div>
+      {/* 내 할일 — 유형별 건수 요약 + 해당 작업 탭 딥링크 (M1) */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Clock className="w-4 h-4 text-amber-500" />
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">내 할일</span>
+          <span className="text-xs text-gray-400">유형별 처리 대기</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: "증빙제출",   count: 3, href: "/op-eval/evidence?tab=submit", tone: "text-blue-700 bg-blue-50" },
+            { label: "반려 재제출", count: 1, href: "/op-eval/evidence?tab=submit", tone: "text-red-700 bg-red-50" },
+          ].map((t) => (
+            <Link key={t.label} href={t.href}
+              className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow group">
+              <span className="text-sm font-medium text-gray-700">{t.label}</span>
+              <span className="flex items-center gap-1.5">
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${t.tone}`}>{t.count}건</span>
+                <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* 내 진행 상태 */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
+        <BarChart3 className="w-5 h-5 text-blue-500" />
+        <div>
+          <div className="text-xs text-gray-500">내 진행 상태</div>
+          <div className="text-base font-bold text-gray-900">5/8 <span className="text-xs font-normal text-gray-400">완료</span></div>
         </div>
       </div>
     </div>

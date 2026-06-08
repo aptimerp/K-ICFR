@@ -161,7 +161,24 @@
   - 미비점 이월 없음 확정 (동일 기간 내 마무리)
   - 증빙수집방식 3종 확정: ERP_FIRST / MANUAL_ONLY / OPTIONAL
 
-### Phase 8-B: UI v7 코드 반영 🔜 (즉시 가능)
+### Phase 8-B: M1/M2 결재 UX 재설계 ✅ (2026-06-08 완료)
+- **상태**: ✅ 완료 — 빌드 검증 통과 (23페이지, 경고 0건)
+- **작업**: 홈 내 할일 통합(요약+딥링크) / 결재관리 내 할일 탭 제거 / 상신함·결재함 디테일 / ApprovalDrawer 신규
+- **산출물**: `components/ApprovalDrawer.jsx`(신규), `app/page.jsx`·`approval/sent`·`approval/inbox`(수정), `approval/todo`(삭제), `AppLayout.jsx`(수정)
+- **DB 영향 없음** (🟢 LOW, RISK Y5 해소)
+
+### Phase 8-C-1: 상신함 고도화 + 증빙뷰어 표준화 + 상신 게이트 ✅ (2026-06-08 완료)
+- **상태**: ✅ 완료 — 빌드 23페이지 경고 0건, preview 실측 PASS
+- **작업**: 상신함 전면 고도화(필터·정렬·페이지네이션) / 전역 통제기간 셀렉터(A안) / 증빙뷰어 표준 컴포넌트 / 우측패널 clamp / 저장·상신 분리 + 2단계 게이트(필수·권장)
+- **신규 컴포넌트**: `EvidenceViewer.jsx` · `evalTerms.js` · `ApprovalDrawer.jsx`
+- **신규 문서**: `docs/UI_패턴.md` (5개 표준 패턴)
+- **DB 영향 없음** (기존 status enum 재사용)
+
+### Phase 8-C-2: 결재함 동일 구조 적용 🔜 (다음 단계)
+- **상태**: 🔜 대기
+- **작업**: 결재함(inbox)에 EvidenceViewer·게이트·전역통제기간·고도화 적용 (표준 컴포넌트 재사용)
+
+### Phase 8-B2: UI v7 탭명 코드 반영 🔜 (즉시 가능)
 - **상태**: 🔜 대기 — Claude 즉시 수정 가능 (외부 의존성 없음)
 - **작업**: 탭명 2곳 수정 (`부서·사원 관리`, `사용자·권한` 탭 통합)
 - **파일**: `components/AppLayout.jsx`, `/settings/users`, `/settings/permissions`

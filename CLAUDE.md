@@ -111,8 +111,15 @@ SAC 5명 (총괄 이용철 + 담당 4명)
 
 ## UI 개발 원칙 ★ 반드시 준수
 
+### 재사용 컴포넌트·패턴 (신규 화면 전 반드시 확인)
+- **`docs/UI_패턴.md`** — 확정된 UI 표준 패턴 모음. 신규 화면 구현 전 이 문서를 먼저 보고 기존 컴포넌트를 우선 사용
+  - `components/EvidenceViewer.jsx` — 증빙 개별 확인 표준 모달 (크게보기/비교 + 줌 + 전체화면). **증빙 확인 화면은 모두 이걸 사용**
+  - `components/ApprovalDrawer.jsx` — 결재 우측 사이드 패널 (clamp 폭)
+  - `components/evalTerms.js` — 전역 통제기간 셀렉터 (useEvalTerm)
+- 임의로 비슷한 UI를 새로 만들지 말 것 — 기존 패턴을 응용·확장
+
 ### 스타일가이드
-- **스타일가이드 파일**: `04_시스템자료/04_03_K_New_K-ICFR_SYSTEM/style-guide.html`
+- **스타일가이드 파일**: `04_시스템자료/03_K_New_K-ICFR_SYSTEM/style-guide.html`
 - UI 작업 전 반드시 이 HTML 파일을 참조할 것
 - **프레임워크**: Next.js + Tailwind CSS — 스타일가이드 토큰 외 임의 값 사용 금지
 
