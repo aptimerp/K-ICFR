@@ -1,5 +1,5 @@
-# Smart-ICM 새 채팅방 인계 문서 (Phase 7-B → Phase 8)
-> 최종 수정: 2026-06-05 | Phase 8-설계논의2 진행중 — v8 메뉴 확정 대기, 리스크 분류 완료, v2.1 엑셀 대기
+# Smart-ICM 새 채팅방 인계 문서 (Phase 8-C-2 — 파일 미리보기·업로드 안정성 완료)
+> 최종 수정: 2026-06-09 | react-pdf v7+v3 교체 + FileViewer·FileUploader 신규 + production 검증 완료
 > 이 문서를 새 채팅방에서 Claude에게 보여주며 시작하세요.
 
 ---
@@ -14,13 +14,14 @@
 다음 순서대로 읽고 시작해주세요:
 1. CLAUDE.md (프로젝트 컨텍스트)
 2. .planning/HANDOVER.md (이 문서, 인계 마스터)
-3. .planning/IA_DESIGN.md (v7 확정 IA)
-4. docs/DB_스키마.md (14개 테이블 설계)
+3. .planning/RISK_DECISION_LOG.md (DB/설계 리스크 결정 이력)
+4. docs/UI_패턴.md (표준 컴포넌트 패턴)
+5. docs/DB_스키마.md (15개 테이블 설계)
 
-현재 상태: Phase 7-A (DB 스키마 설계) + Phase 7-B (IA v7 메뉴 확정) 완료.
-다음 작업: Phase 8 — 운영관리·운영평가관리 탭별 데이터 운영방식 정의 + CRUD 연동.
+현재 상태: Phase 8-C-2 완료 — react-pdf v7+pdfjs v3 교체, FileViewer·FileUploader 신규, production 검증 완료 (2026-06-09).
+다음 작업: Phase 8-C-3 (Supabase 계정 수령 후 FileUploader 실연동) 또는 Phase 9 — 장한나 PL 지시에 따름.
 
-먼저 위 문서들을 읽고, Phase 8 작업 계획을 보여주세요.
+먼저 위 문서들을 읽고, 현재 상태를 파악해주세요.
 ```
 
 ---
@@ -39,20 +40,39 @@
 
 ---
 
-## 📍 현재 상태 — Phase 7-B 완료
+## 📍 현재 상태 — Phase 8-C-2 완료
 
 ### ✅ 완료 페이즈
 - Phase 0~6: 2026-05-15 ~ 2026-05-22 완료 (UI 구축 + IA v6 확정)
-- **Phase 7-A (Supabase DB 스키마 설계): 2026-06-01 완료** ⭐
-- **Phase 7-B (IA v7 메뉴 구조 확정): 2026-06-01 완료** ⭐
-- **Phase 8-A (데이터 운영방식 문서 정의): 2026-06-02 완료** ⭐
+- **Phase 7-A (Supabase DB 스키마 설계): 2026-06-01 완료**
+- **Phase 7-B (IA v7 메뉴 구조 확정): 2026-06-01 완료**
+- **Phase 8-A (데이터 운영방식 문서 정의): 2026-06-02 완료**
+- **Phase 8-B (상신함·결재함 Drawer UX 설계 확정): 2026-06-05 완료**
+- **Phase 8-C-1 (상신함 고도화 + EvidenceViewer 표준화 + 상신 게이트): 2026-06-08 완료** ⭐
+- **Phase 8-C-2 (결재함 표준화 + EvidenceViewer B안): 2026-06-09 완료** ⭐
+- **SAC 견본 PDF 실제 렌더러: 2026-06-09 완료** ⭐
 
-### 🔜 다음 페이즈
-- **Phase 7-C**: Supabase 마이그레이션 실행 (홍세민 PM 계정 수령 후)
-- **Phase 8-B**: UI v7 코드 반영 (탭명 2곳) ← **즉시 시작 가능**
-- **Phase 8-C**: Supabase CRUD 연동 (v2 엑셀 작성 완료 + 계정 수령 후)
-- Phase 9: SAC API 연동
-- Phase 10: 검증 + 배포
+### Phase 8-C-2 핵심 산출물 (2026-06-09)
+| 파일 | 변경 내용 |
+|------|-----------|
+| `components/PdfViewer.jsx` | react-pdf v7 API 재작성 — ResizeObserver 동적 폭 + orientation padding + PdfThumbnail |
+| `components/FileViewer.jsx` | **신규** — PDF·이미지·Excel·Word 통합 뷰어 (확장자 자동 감지, thumbnail prop 분기) |
+| `components/FileUploader.jsx` | **신규** — 드래그앤드롭 + 타입/크기 검증 + 진행률 + Supabase onUpload 인터페이스 |
+| `app/approval/inbox/page.jsx` | FileViewer dynamic import(ssr:false) 통합 — renderPage·renderThumbnail 단순화 |
+| `app/op-eval/evidence/page.jsx` | 수동 드래그앤드롭 JSX → FileUploader 컴포넌트 교체 |
+| `next.config.mjs` | `transpilePackages: ["docx-preview"]` + `canvas alias = false` |
+| `public/pdf.worker.min.js` | pdfjs-dist v3 CJS worker 1,062KB 복사 |
+| `public/demo-evidence/demo_rcm_result.xlsx` | SheetJS 생성 데모 엑셀 (2시트) |
+| `public/demo-evidence/demo_eval_manual.docx` | JSZip 최소 구조 데모 docx |
+
+**⚠️ Supabase 연동 대기**: FileUploader `onUpload` prop 주석 처리 상태. Supabase 계정 수령 후 주석 해제 + signedUrl 연결로 활성화.
+
+### 🔜 다음 페이즈 후보
+- **Phase 8-C-3**: FileUploader Supabase 실연동 (홍세민 PM 계정 수령 후)
+- **Phase 7-C**: Supabase 마이그레이션 실행 (계정 수령 후)
+- **Phase 8-D**: 운영평가 화면 표준 컴포넌트 적용 (필요 시)
+- **Phase 9**: SAC API 연동
+- **Phase 10**: Supabase CRUD 연동 + 검증 + 배포
 
 ---
 
@@ -291,16 +311,16 @@ npm run build: 24페이지 정적 생성 ✅
 
 ```
 .planning/
-├── HANDOVER.md              ← 이 문서 (최종 수정 2026-06-05)
-├── IA_DESIGN.md             ← v7 확정 (v8 미반영 — 트리 확정 후 업데이트 예정)
-├── STATE.md                 ← Phase 8-설계논의2 진행중
-├── RISK_DECISION_LOG.md     ← 🆕 DB/설계 리스크 분류 + 결정 이력 (2026-06-05 신규)
-├── ROADMAP.md               ← Phase 8 대기
-├── REQUIREMENTS.md          ← v7 섹션 포함
+├── HANDOVER.md              ← 이 문서 (최종 수정 2026-06-09)
+├── PLAN.md                  ← Phase 8-C-2 체크리스트 전체 완료
+├── IA_DESIGN.md             ← v7 확정 (v8 미반영)
+├── RISK_DECISION_LOG.md     ← DB/설계 리스크 분류 + 결정 이력
+├── REQUIREMENTS.md          ← Phase 8-C-2 섹션 포함
 └── VERIFICATION.md          ← 전체 PASS
 
 docs/
-└── DB_스키마.md          ← 14개 테이블 설계 마스터
+├── UI_패턴.md               ← ★ 표준 컴포넌트 패턴 (신규 화면 전 반드시 확인)
+└── DB_스키마.md             ← 15개 테이블 설계 마스터 (rcm owner 2분리 반영)
 
 supabase/
 ├── migrations/001~003.sql
@@ -309,33 +329,42 @@ supabase/
 lib/supabase.ts
 .env.local.example
 
-app/ (Next.js, 24페이지)
+app/
+├── approval/
+│   ├── inbox/page.jsx   ← ★ Phase 8-C-2 완료 (결재함 표준화)
+│   └── sent/page.jsx    ← ★ Phase 8-C-1 완료 (상신함 표준화)
+└── ... (24페이지)
+
 components/
-├── AppLayout.jsx         ← v6 사이드바 (v7 명칭 미반영)
-├── SubPageTabs.jsx
-└── EvalTermToggle.jsx
+├── EvidenceViewer.jsx   ← ★ 표준 증빙 미리보기 모달 (크게보기/나란히비교 + 줌 + 전체화면)
+├── ApprovalDrawer.jsx   ← ★ 표준 결재 사이드 패널 (clamp 폭)
+├── evalTerms.js         ← ★ 전역 통제기간 셀렉터 (useEvalTerm)
+├── FileViewer.jsx       ← ★ 신규 (Phase 8-C-2) — PDF·이미지·Excel·Word 통합 뷰어
+├── FileUploader.jsx     ← ★ 신규 (Phase 8-C-2) — 드래그앤드롭 + Supabase onUpload 인터페이스
+├── PdfViewer.jsx        ← react-pdf v7 재작성 (PdfPageViewer + PdfThumbnail)
+├── AppLayout.jsx        ← 사이드바 (v7 명칭 미반영 — UI 탭명 수정 미완료)
+└── SubPageTabs.jsx
 
 01_PJT산출물/
 ├── Smart-ICM_메뉴구조_v6.xlsx
-├── Smart-ICM_Evidence_Master_Improved.xlsx
 └── rcm_full_extracted.json   ← RCM 402건 시딩 소스
 ```
 
 ---
 
-## ⚠️ 미해결 이슈 (2026-06-05 업데이트)
+## ⚠️ 미해결 이슈 (2026-06-09 업데이트)
 
 | # | 이슈 | 조치 | 우선순위 |
 |---|------|------|:--------:|
 | 1 | Supabase 계정 미수령 | 홍세민 PM 수령 → .env.local 설정 후 마이그레이션 | 🔴 외부 의존 |
-| 2 | **v8 메뉴 트리 미확정** (M1·M2 디테일, M3·M4·M5) | 장한나 PL 검토 → 다음 세션 확정 | 🔴 설계 블로커 |
-| 3 | **v2.1 엑셀 미작성** (v2 → v2.1 반영 필요) | 다음 세션 시작 시 Claude가 v2.1 생성 후 장한나 PL 작성 | 🟠 DB 설계 선행 |
-| 4 | UI v7 코드 미반영 (`부서·사원`, `사용자·권한` 탭) | Claude 즉시 수정 가능 | 🟡 즉시 가능 |
-| 5 | **M3 평가설정·M4 연동설정 미리보기 미구현** | 다음 세션에서 preview-v8-design.html 탭 추가 | 🟡 |
-| 6 | **통합 엑셀 다운로드 — 시트 단위·ZIP 관계 미확정** | 다음 세션 논의 | 🟡 |
+| 2 | **v8 메뉴 트리 미확정** (M1·M2 디테일, M3·M4·M5) | 장한나 PL 검토 → 확정 | 🔴 설계 블로커 |
+| 3 | **v2.1 엑셀 미작성** | Claude가 생성 가능 — 요청 시 즉시 | 🟠 DB 설계 선행 |
+| 4 | UI v7 코드 미반영 (`부서·사원`, `사용자·권한` 탭) | `AppLayout.jsx` 탭명 수정 — Claude 즉시 가능 | 🟡 즉시 가능 |
+| 5 | **EvidenceViewer B안 실제 연동 미완료** | Supabase 계정 수령 후 `renderPage`+`renderThumbnail` 구현 | 🟡 Supabase 선행 |
+| 6 | **통합 엑셀 다운로드 — 시트 단위·ZIP 관계 미확정** | 별도 세션 논의 | 🟡 |
 | 7 | SAC API 미연결 | 이영호 차장 수령 (Phase 9) | 🔵 후속 Phase |
 | 8 | 인증 없음 (로그인 UI만) | SAC 합의 후 일괄 적용 | 🔵 후속 Phase |
-| 9 | 설계평가관리 미구현 | 증빙제출 완료 후 별도 페이즈 | 🔵 후속 Phase |
+| 9 | 설계평가관리 미구현 | 별도 페이즈 | 🔵 후속 Phase |
 
 ---
 

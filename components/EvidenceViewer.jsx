@@ -23,11 +23,21 @@ import { FileText, Download, X, ZoomIn, ZoomOut, Maximize2, Minimize2, Columns2,
  *  - title       : 헤더 제목 (기본 "첨부 증빙 미리보기")
  *  - onDownload    : (file) => void  개별 다운로드
  *  - onDownloadAll : () => void       일괄 저장
- *  - renderPage  : (file, pageNo) => ReactNode  실제 증빙 렌더러 (미지정 시 더미 플레이스홀더)
+ *  - renderPage      : (file, pageNo) => ReactNode  실제 증빙 렌더러 (미지정 시 더미 A4 플레이스홀더)
+ *  - renderThumbnail : (file) => ReactNode           썸네일 렌더러 (미지정 시 아이콘 플레이스홀더)
+ *
+ * ── B안 Supabase/PDF.js 연동 가이드 (Phase 8-C) ──────────────────────────
+ *  renderPage를 구현하면 가로형·세로형 증빙이 자동 처리됩니다.
+ *   · renderPage  : PDF.js page.getViewport()가 실제 가로/세로를 결정 → aspect ratio 강제 없음
+ *   · renderThumbnail : 썸네일도 동일하게 비율 자유형 컨테이너에 렌더링됨
+ *   · files 배열 형식: { name, size, pages: n, signedUrl: '...' }
+ *  두 prop 미지정 시 현재와 동일한 A4 세로 플레이스홀더 동작 유지.
+ * ─────────────────────────────────────────────────────────────────────────
  */
 export default function EvidenceViewer({
   open, onClose, files = [], startIndex = 0,
-  title = "첨부 증빙 미리보기", onDownload, onDownloadAll, renderPage,
+  title = "첨부 증빙 미리보기", onDownload, onDownloadAll,
+  renderPage, renderThumbnail,
 }) {
   const [idx, setIdx] = useState(startIndex);
   const [mode, setMode] = useState("single");   // single | compare
@@ -110,7 +120,16 @@ export default function EvidenceViewer({
             <div className="w-40 shrink-0 border-r border-gray-100 overflow-y-auto p-2 space-y-2 bg-gray-50/50">
               {files.map((f, k) => (
                 <button key={k} onClick={() => setIdx(k)} className={`w-full rounded-lg border p-1.5 text-left transition-colors ${k === idx ? "border-blue-400 bg-blue-50 ring-1 ring-blue-200" : "border-gray-200 bg-white hover:border-gray-300"}`}>
-                  <div className="aspect-[210/297] bg-white border border-gray-200 rounded flex items-center justify-center text-gray-300 mb-1"><FileText className="w-5 h-5" strokeWidth={1} /></div>
+                  {/* renderThumbnail 제공 시 비율 자유형 컨테이너 → 가로형 증빙 자동 처리 */}
+                  {renderThumbnail ? (
+                    <div className="w-full overflow-hidden rounded border border-gray-200 bg-white mb-1">
+                      {renderThumbnail(f)}
+                    </div>
+                  ) : (
+                    <div className="aspect-[210/297] bg-white border border-gray-200 rounded flex items-center justify-center text-gray-300 mb-1">
+                      <FileText className="w-5 h-5" strokeWidth={1} />
+                    </div>
+                  )}
                   <div className="text-[10px] text-gray-600 truncate font-medium">{f.name}</div>
                   {f.size && <div className="text-[10px] text-gray-400">{f.size}</div>}
                 </button>

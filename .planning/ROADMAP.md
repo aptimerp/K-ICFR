@@ -174,9 +174,15 @@
 - **신규 문서**: `docs/UI_패턴.md` (5개 표준 패턴)
 - **DB 영향 없음** (기존 status enum 재사용)
 
-### Phase 8-C-2: 결재함 동일 구조 적용 🔜 (다음 단계)
-- **상태**: 🔜 대기
-- **작업**: 결재함(inbox)에 EvidenceViewer·게이트·전역통제기간·고도화 적용 (표준 컴포넌트 재사용)
+### Phase 8-C-2: PDF 뷰어 교체 + 파일 미리보기·업로드 안정성 확보 ✅ (2026-06-09 완료)
+- **상태**: ✅ 완료 — 53개 항목 전부 PASS
+- **작업**: react-pdf v7+pdfjs v3 CJS 교체 / FileViewer.jsx 통합 뷰어 (PDF·이미지·Excel·Word) / FileUploader.jsx 드래그앤드롭+진행률 / Supabase onUpload 인터페이스 준비
+- **신규 컴포넌트**: `FileViewer.jsx` · `FileUploader.jsx` (PdfViewer.jsx 재작성)
+- **신규 파일**: `public/pdf.worker.min.js` (1,062KB CJS) · 데모 xlsx·docx
+
+### Phase 8-C-3: Supabase 계정 수령 후 FileUploader 실연동 🔜 (다음 단계)
+- **상태**: 🔜 대기 — 홍세민 PM Supabase 계정 수령 필요
+- **작업**: FileUploader `onUpload` 주석 해제 + Supabase signed URL 연결 + Excel/Word end-to-end 실 파일 확인
 
 ### Phase 8-B2: UI v7 탭명 코드 반영 🔜 (즉시 가능)
 - **상태**: 🔜 대기 — Claude 즉시 수정 가능 (외부 의존성 없음)

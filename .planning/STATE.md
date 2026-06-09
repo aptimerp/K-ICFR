@@ -4,7 +4,32 @@
 - **명칭**: 내부회계관리시스템 구축 (Smart-ICM)
 - **PL**: 장한나
 - **시작일**: 2026-05-15
-- **현재 상태**: Phase 8-C-1 (상신함 고도화 + 증빙뷰어 표준화 + 상신게이트) ✅ 완료 (2026-06-08)
+- **현재 상태**: Phase 8-C-2 (PDF 뷰어 교체 + 파일 미리보기·업로드 안정성) ✅ 완료 (2026-06-09)
+
+---
+
+## Phase 8-C-2 — PDF 뷰어 교체 + 파일 미리보기·업로드 안정성 확보 ✅ (2026-06-09)
+- **상태**: ✅ 완료 — npm run build 통과, production 서버 검증 완료 (53개 항목 전부 PASS)
+- **근거**: VERIFICATION.md Phase 8-C-2 검증 결과
+- **트리거**: "각종 평가 증빙(PDF, JPG, JPEG, PNG, 엑셀, WORD) 미리보기·업로드 기능을 시스템 운영 수준으로 안정화"
+- **작업 내용**:
+  1. **PDF 라이브러리 교체** — pdfjs-dist v4/v5 ESM 전용 webpack 충돌 문제 근본 해결  
+     → `react-pdf v7.7.3` + `pdfjs-dist v3.11.174` (CJS 빌드) 조합으로 교체  
+     → `public/pdf.worker.min.js` 1,062KB 복사 완료  
+     → `next.config.mjs`: `canvas alias = false` + `transpilePackages: ["docx-preview"]`
+  2. **PdfViewer.jsx 재작성** — react-pdf v7 API / ResizeObserver 컨테이너폭 동적 적용 / orientation별 여백 / PdfThumbnail 소형 모드
+  3. **FileViewer.jsx 신규** — 파일명 확장자 자동 타입 감지 통합 뷰어  
+     PDF / 이미지(PNG·JPG·JPEG·GIF·WEBP) / Excel(xlsx·xls) / Word(docx·doc) 지원  
+     SheetJS 시트탭 전환 / docx-preview 브라우저 렌더링 / 모든 타입 로딩·에러 폴백  
+     thumbnail prop으로 썸네일 모드 분기
+  4. **FileUploader.jsx 신규** — 드래그앤드롭 + 타입/크기 검증(50MB) + 진행률 시뮬레이션  
+     Supabase `onUpload` prop 인터페이스 (주석 포함, 계정 수령 후 연동 예정)
+  5. **approval/inbox/page.jsx 수정** — FileViewer dynamic import(ssr:false) 통합 적용  
+     `renderPage()` · `renderThumbnail()` FileViewer 단순화
+  6. **op-eval/evidence/page.jsx 수정** — 수동 드래그앤드롭 JSX 교체 → FileUploader 컴포넌트 사용
+  7. **데모 파일 생성** — `public/demo-evidence/demo_rcm_result.xlsx` (SheetJS) · `demo_eval_manual.docx` (JSZip 최소 구조)
+- **DB 영향 없음** — UI 레이어 전용 변경
+- **다음**: Supabase 계정 수령 후 FileUploader `onUpload` 실연동 + signedUrl 연결
 
 ---
 

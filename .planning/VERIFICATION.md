@@ -91,3 +91,52 @@
 - **결재함(inbox)**: EvidenceViewer·게이트·전역통제기간 미적용 — 다음 작업 대상
 - 실데이터 연동·실제 결재선 엔진·파일타입별 렌더(엑셀 SheetJS 등)는 Phase 8-C/9 (비목표)
 - 우회 사유 audit_logs 기록은 Phase 8-C 구현
+
+
+---
+
+# 검증 리포트 — 파일 미리보기·업로드 안정성 구축 (Phase 8-C-2)
+> 검증일: 2026-06-09 | 검증자: Claude (자동) | 빌드: ✅ 성공 (23페이지, 경고 0, 에러 0)
+
+## 검증 범위
+1. PDF 뷰어 교체: react-pdf v8(ESM) → react-pdf v7.7.3 + pdfjs-dist v3.11.174(CJS)
+2. FileViewer.jsx 신규 구현 (PDF/이미지/Excel/Word 통합 미리보기)
+3. FileUploader.jsx 신규 구현 (드래그앤드롭 + 타입·크기 검증 + 진행률)
+4. approval/inbox, op-eval/evidence 연동 업데이트
+
+## 종합 결과: 53개 항목 전부 ✅ 통과
+
+### V1. 의존성
+- react-pdf 7.7.3 / pdfjs-dist 3.11.174 (CJS, deduped) ✅
+- xlsx 0.18.5 (CJS) / docx-preview 0.3.7 (ESM, transpilePackages 처리) ✅
+
+### V2. 파일 존재
+- components/FileViewer.jsx (14KB) ✅
+- components/FileUploader.jsx (13KB) ✅
+- public/pdf.worker.min.js (1,062KB, CJS) ✅
+
+### V3. 코드 무결성
+- FileViewer: getFileType / ImageViewer / ExcelViewer / WordViewer / PdfPageViewer / thumbnail 분기 모두 ✅
+- FileUploader: ALLOWED_EXTS / validateFile / maxSizeMB / onDrop / onUpload / 진행률 바 ✅
+- next.config: transpilePackages docx-preview / canvas alias ✅
+
+### V4. 페이지 연동
+- approval/inbox: PdfPageViewer 직접 import 제거 → FileViewer 단일 컴포넌트, signedUrl 대응 ✅
+- op-eval/evidence: 수동 드래그앤드롭 → FileUploader 표준 컴포넌트, onUpload Supabase 인터페이스 ✅
+
+### V5. 빌드 산출물
+- workerSrc / xlsx(SheetJS) / docx-preview 청크 포함 확인 ✅
+
+### V6. HTTP 서빙 (5개 파일 전부 HTTP 200, MIME 정확) ✅
+
+### V7. 타입 검증 단위 테스트 (7/7 통과)
+- PDF/PNG/XLSX/DOCX → OK / CSV/EXE/60MB PDF → 에러 정상 반환 ✅
+
+### V8. 브라우저 렌더링
+- dev(3000): PDF canvas 2개(썸네일+메인), PNG 이미지, FileUploader UI ✅
+- production(3001): PDF canvas 640×452, worker 1062KB 로드, 실패 리소스 0건 ✅
+
+## 잔여 작업 (Supabase 연동 후)
+1. FileUploader onUpload 주석 해제 + Supabase Storage 버킷 생성
+2. signedUrl → Supabase signed URL 연결
+3. Excel/Word end-to-end 렌더링 실 파일 검증
