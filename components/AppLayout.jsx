@@ -104,8 +104,7 @@ const NAV = [
     badge: null,
     disabled: false,
     items: [
-      { href: "/settings/users",         label: "사용자" },
-      { href: "/settings/permissions",   label: "권한" },
+      { href: "/settings/users",         label: "사용자·권한" },
       { href: "/settings/log",           label: "로그" },
       { href: "/settings/evidence-log",  label: "증빙 로그" },
       { href: "/settings/env",           label: "환경설정" },

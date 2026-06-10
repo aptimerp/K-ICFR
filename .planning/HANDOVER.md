@@ -1,5 +1,5 @@
-# Smart-ICM 새 채팅방 인계 문서 (Phase 8-C-2 — 파일 미리보기·업로드 안정성 완료)
-> 최종 수정: 2026-06-09 | react-pdf v7+v3 교체 + FileViewer·FileUploader 신규 + production 검증 완료
+# Smart-ICM 새 채팅방 인계 문서 (Phase 8-D — DB 설계 재검토 + UI v7 코드 반영 완료)
+> 최종 수정: 2026-06-10 | company_id 멀티테넌시 + eval_terms.term_name + eval_mode 개방형 regex + UI v7 탭명 반영
 > 이 문서를 새 채팅방에서 Claude에게 보여주며 시작하세요.
 
 ---
@@ -18,8 +18,8 @@
 4. docs/UI_패턴.md (표준 컴포넌트 패턴)
 5. docs/DB_스키마.md (15개 테이블 설계)
 
-현재 상태: Phase 8-C-2 완료 — react-pdf v7+pdfjs v3 교체, FileViewer·FileUploader 신규, production 검증 완료 (2026-06-09).
-다음 작업: Phase 8-C-3 (Supabase 계정 수령 후 FileUploader 실연동) 또는 Phase 9 — 장한나 PL 지시에 따름.
+현재 상태: Phase 8-D 완료 — company_id 멀티테넌시, eval_terms.term_name, eval_mode 개방형 regex, UI v7 탭명 반영 (2026-06-10).
+다음 작업: R3 Status 설계 방안 결정 (5가지 방안 제시됨) + R4~R9 HIGH 항목 검토 + Supabase 계정 수령 후 연동 — 장한나 PL 지시에 따름.
 
 먼저 위 문서들을 읽고, 현재 상태를 파악해주세요.
 ```
@@ -40,7 +40,7 @@
 
 ---
 
-## 📍 현재 상태 — Phase 8-C-2 완료
+## 📍 현재 상태 — Phase 8-D 완료
 
 ### ✅ 완료 페이즈
 - Phase 0~6: 2026-05-15 ~ 2026-05-22 완료 (UI 구축 + IA v6 확정)
@@ -51,26 +51,37 @@
 - **Phase 8-C-1 (상신함 고도화 + EvidenceViewer 표준화 + 상신 게이트): 2026-06-08 완료** ⭐
 - **Phase 8-C-2 (결재함 표준화 + EvidenceViewer B안): 2026-06-09 완료** ⭐
 - **SAC 견본 PDF 실제 렌더러: 2026-06-09 완료** ⭐
+- **Phase 8-D (DB 설계 재검토 + UI v7 코드 반영): 2026-06-10 완료** ⭐⭐
 
-### Phase 8-C-2 핵심 산출물 (2026-06-09)
+### Phase 8-D 핵심 산출물 (2026-06-10)
+| 파일 | 변경 내용 |
+|------|-----------|
+| `supabase/migrations/001_initial_schema.sql` | `companies` 테이블 신설 + 전 16개 테이블 `company_id` 추가 + 복합 UNIQUE·FK 전체 적용 |
+| `supabase/migrations/002_rls_policies.sql` | `current_company_id()` 헬퍼 신설 + 전 정책 company_id 격리 조건 추가 |
+| `docs/DB_스키마.md` | 16개 테이블로 갱신, companies DDL 추가, 설계원칙 #10 멀티테넌시 추가 |
+| `.planning/RISK_DECISION_LOG.md` | R1(term_name), R2(company_id), R6(eval_mode 개방형) 결정 업데이트 |
+| `app/operations/period/page.jsx` | 탭명 `조직/권한 관리` → `부서·사원 관리` |
+| `app/settings/users/page.jsx` | 2탭 통합 페이지 재작성 (사용자 관리 + 권한 설정) |
+| `components/AppLayout.jsx` | 사이드바 `사용자`+`권한` → `사용자·권한` 1개 통합 |
+
+### Phase 8-C-2 핵심 산출물 (2026-06-09, 참고용)
 | 파일 | 변경 내용 |
 |------|-----------|
 | `components/PdfViewer.jsx` | react-pdf v7 API 재작성 — ResizeObserver 동적 폭 + orientation padding + PdfThumbnail |
 | `components/FileViewer.jsx` | **신규** — PDF·이미지·Excel·Word 통합 뷰어 (확장자 자동 감지, thumbnail prop 분기) |
 | `components/FileUploader.jsx` | **신규** — 드래그앤드롭 + 타입/크기 검증 + 진행률 + Supabase onUpload 인터페이스 |
-| `app/approval/inbox/page.jsx` | FileViewer dynamic import(ssr:false) 통합 — renderPage·renderThumbnail 단순화 |
+| `app/approval/inbox/page.jsx` | FileViewer dynamic import(ssr:false) 통합 |
 | `app/op-eval/evidence/page.jsx` | 수동 드래그앤드롭 JSX → FileUploader 컴포넌트 교체 |
 | `next.config.mjs` | `transpilePackages: ["docx-preview"]` + `canvas alias = false` |
 | `public/pdf.worker.min.js` | pdfjs-dist v3 CJS worker 1,062KB 복사 |
-| `public/demo-evidence/demo_rcm_result.xlsx` | SheetJS 생성 데모 엑셀 (2시트) |
-| `public/demo-evidence/demo_eval_manual.docx` | JSZip 최소 구조 데모 docx |
 
-**⚠️ Supabase 연동 대기**: FileUploader `onUpload` prop 주석 처리 상태. Supabase 계정 수령 후 주석 해제 + signedUrl 연결로 활성화.
+**⚠️ Supabase 연동 대기**: FileUploader `onUpload` prop 미연결 상태. Supabase 계정 수령 후 활성화.
 
 ### 🔜 다음 페이즈 후보
+- **R3 Status 방안 결정** (즉시 가능): 5가지 방안 제시됨 — A·B·C·D·E 중 선택 필요
+- **R4~R9 HIGH 항목 검토** (즉시 가능): RISK_DECISION_LOG.md 참조
 - **Phase 8-C-3**: FileUploader Supabase 실연동 (홍세민 PM 계정 수령 후)
 - **Phase 7-C**: Supabase 마이그레이션 실행 (계정 수령 후)
-- **Phase 8-D**: 운영평가 화면 표준 컴포넌트 적용 (필요 시)
 - **Phase 9**: SAC API 연동
 - **Phase 10**: Supabase CRUD 연동 + 검증 + 배포
 
@@ -138,26 +149,31 @@
 
 ---
 
-## 🗄️ Phase 7-A 산출물 (DB 스키마)
+## 🗄️ Phase 7-A / 8-D 산출물 (DB 스키마)
 
-### 14개 테이블 요약
+### 16개 테이블 요약 (2026-06-10 company_id 멀티테넌시 반영)
 
-| 테이블 | 설명 | IA 메뉴 |
-|--------|------|---------|
-| `eval_terms` | 평가기간 | 평가기간 관리 |
-| `departments` | 부서 마스터 | 부서·사원 관리 |
-| `users` | 사용자 | 사용자·권한 |
-| `rcm_controls` | RCM 402건 | RCM 관리 |
-| `rcm_dept_map` | RCM-부서 매핑 | RCM-부서 Map |
-| `rcm_snapshots` | RCM 버전 락 | RCM 지정 |
-| `populations` | 모집단 | 모집단 관리 |
-| `samples` | 샘플링 결과 | 샘플링 작업 |
-| `evidence_files` | 증빙 파일 | 증빙수집 |
-| `evidence_submissions` | 증빙제출 워크플로우 | 증빙제출 수행/승인 |
-| `op_evaluations` | 운영평가 수행 | 운영평가 수행 |
-| `deficiencies` | 예외·미비점 4분류 | 예외보고·미비점 |
-| `approvals` | 결재 워크플로우 | 결재관리 |
-| `audit_logs` | 변경이력 | 시스템 로그 |
+| # | 테이블 | 설명 | IA 메뉴 |
+|---|--------|------|---------|
+| 0 | `companies` | 회사 마스터 (멀티테넌시 루트) ★신규 | — |
+| 1 | `eval_terms` | 평가기간 (`term_name` 추가, `eval_mode` 개방형) | 평가기간 관리 |
+| 2 | `departments` | 부서 마스터 | 부서·사원 관리 |
+| 3 | `users` | 사용자 | 사용자·권한 |
+| 4 | `rcm_controls` | RCM 402건 | RCM 관리 |
+| 5 | `rcm_dept_map` | RCM-부서 매핑 (deprecated 예정) | RCM-부서 Map |
+| 6 | `rcm_snapshots` | RCM 버전 락 | RCM 지정 |
+| 7 | `populations` | 모집단 | 모집단 관리 |
+| 8 | `samples` | 샘플링 결과 | 샘플링 작업 |
+| 9 | `evidence_files` | 증빙 파일 | 증빙수집 |
+| 10 | `evidence_submissions` | 증빙제출 워크플로우 | 증빙제출 수행/승인 |
+| 11 | `op_evaluations` | 운영평가 수행 | 운영평가 수행 |
+| 12 | `deficiencies` | 예외·미비점 4분류 | 예외보고·미비점 |
+| 13 | `approvals` | 결재 워크플로우 | 결재관리 |
+| 14 | `audit_logs` | 변경이력 | 시스템 로그 |
+| (+) | `rcm_default_owners` | 기본 담당자 (rcm_dept_map 분리, Phase 8-A 설계) | 통제수행자 지정 |
+| (+) | `rcm_term_assignments` | 차수별 담당자 override (rcm_dept_map 분리, Phase 8-A 설계) | 증빙제출자 지정 |
+
+> ★ `(+)` 테이블은 DB_스키마.md 설계 완료, migration 파일 미작성 (Phase 7-C에서 실행 예정)
 
 ### 데이터 흐름 (확정)
 ```
@@ -200,9 +216,9 @@ npm run build: 24페이지 정적 생성 ✅
 /settings/*          ← 5페이지 (v7 탭 통합 미반영)
 ```
 
-⚠️ **UI 코드에 v7 미반영 항목**:
-- `/operations/period` 탭명 `조직/권한` → `부서·사원` 변경 필요
-- `/settings/users` + `/settings/permissions` → `사용자·권한` 탭 통합 필요
+✅ **UI v7 코드 반영 완료 (2026-06-10)**:
+- `/operations/period` 탭명 `조직/권한` → `부서·사원` 변경 완료
+- `/settings/users` → `사용자·권한` 탭 통합 완료 (사용자 관리 + 권한 설정 2탭)
 
 ---
 
@@ -274,28 +290,30 @@ npm run build: 24페이지 정적 생성 ✅
 - **하이브리드**: 각 탭 분산형(평소) + 시스템관리 집중형(오류 대응)
 - 각 탭 오류 메시지 → 링크 클릭 → 시스템관리 > ERP API 탭으로 이동
 
-### 📋 다음 세션 작업 순서 (2026-06-05 업데이트)
+### 📋 다음 세션 작업 순서 (2026-06-10 업데이트)
 
-**Step 0 — v8 메뉴 트리 확정** (장한나 PL 검토 후)
+**Step 0 — R3 Status 설계 방안 결정** (즉시 가능, 우선 순위 1)
+- 5가지 방안 검토: A(분산개선)·B(하이브리드이벤트로그)·C(pipeline_stage)·D(상태머신설정화)·E(이벤트소싱)
+- RISK_DECISION_LOG.md R3 항목 참조 + 장한나 PL 선택
+- B안(하이브리드) 권장 — K-ICFR 규정감사 대응·확장성 최적
+
+**Step 1 — R4~R9 HIGH 항목 나머지 검토** (즉시 가능)
+- R4: 결재선 단계 구조 결정
+- R5: 모집단-샘플 관계 결정
+- R7: 트리거 vs 앱 레이어 변경이력 결정
+- R8: 스냅샷 범위 결정 (부분 결정됨, 최종 확인)
+- R9: 감사자 격리 방식 결정
+
+**Step 2 — v8 메뉴 트리 확정** (장한나 PL 검토 후)
 - M1/M2 홈화면·결재관리 구성항목 디테일 피드백 → 확정
 - M3/M4 평가설정·연동설정 미리보기 추가 → 검토 후 확정
 - M5 차수 복사 기능 확정
 - 전체 확정 후 IA_DESIGN.md v8 반영
 
-**Step 1 — v2.1 엑셀 작성 완료 후 업로드** (장한나 PL)
-- ⚠️ v2 → v2.1 변경사항: rcm_default_owners·rcm_term_assignments 분리, v8 M1~M6 반영, 통합 엑셀 다운로드 기능 행 추가
-- v2.1은 Claude가 다음 세션 시작 시 바로 생성 가능 (요청 시)
-- T열(미정/확인필요) + 신규 테이블 정의 시트 F열 작성 후 업로드
-
-**Step 2 — DB 스키마 보완** (Claude)
-- `docs/DB_스키마.md`에 `rcm_default_owners` + `rcm_term_assignments` DDL 추가
+**Step 3 — DB 스키마 보완** (Claude)
+- `rcm_default_owners` + `rcm_term_assignments` migration 파일 작성 (Phase 7-C)
 - 기존 `rcm_dept_map` 마이그레이션 계획 수립
-- v2.1 엑셀 분석 → 추가 신규 테이블 DDL
-- `supabase/migrations/` 업데이트
-
-**Step 3 — UI v7 코드 반영** (Claude, 즉시 가능)
-- `components/AppLayout.jsx` 탭명 `조직/권한 관리` → `부서·사원 관리`
-- `/settings/users` + `/settings/permissions` → `사용자·권한` 탭 통합
+- R3 결정 반영 → Status 관련 테이블 업데이트
 
 **Step 4 — Supabase CRUD 연동** (계정 수령 후)
 - `.env.local` 설정 → 마이그레이션 001→002→003 실행
@@ -359,7 +377,7 @@ components/
 | 1 | Supabase 계정 미수령 | 홍세민 PM 수령 → .env.local 설정 후 마이그레이션 | 🔴 외부 의존 |
 | 2 | **v8 메뉴 트리 미확정** (M1·M2 디테일, M3·M4·M5) | 장한나 PL 검토 → 확정 | 🔴 설계 블로커 |
 | 3 | **v2.1 엑셀 미작성** | Claude가 생성 가능 — 요청 시 즉시 | 🟠 DB 설계 선행 |
-| 4 | UI v7 코드 미반영 (`부서·사원`, `사용자·권한` 탭) | `AppLayout.jsx` 탭명 수정 — Claude 즉시 가능 | 🟡 즉시 가능 |
+| 4 | ~~UI v7 코드 미반영~~ | ✅ 완료 (2026-06-10) | ✅ |
 | 5 | **EvidenceViewer B안 실제 연동 미완료** | Supabase 계정 수령 후 `renderPage`+`renderThumbnail` 구현 | 🟡 Supabase 선행 |
 | 6 | **통합 엑셀 다운로드 — 시트 단위·ZIP 관계 미확정** | 별도 세션 논의 | 🟡 |
 | 7 | SAC API 미연결 | 이영호 차장 수령 (Phase 9) | 🔵 후속 Phase |

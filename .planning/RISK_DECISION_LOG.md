@@ -18,16 +18,24 @@
 
 ### R1. 차수(eval_term) 식별 방식
 - **내용**: 모든 평가 데이터(samples, evidence_submissions, op_evaluations 등)가 `eval_term_id`로 FK 연결됨
-- **결정 필요 사항**: INT 자동증가 PK vs 연도+회차 복합키 (예: `2026-mid1`)
-- **현재 설계**: INT PK (`id`) + 별도 컬럼(`year`, `term_type`, `term_seq`)으로 분리
-- **상태**: ✅ 현재 설계 유지 확정 (2026-06-01)
-- **변경 시 영향**: FK 참조 전체 재구성 (samples·populations·rcm_term_assignments 등 7개 테이블)
+- **현재 설계**: UUID PK (`id`) + 별도 컬럼(`term_id`, `term_year`, `eval_mode`, `term_cnt`)으로 분리
+- **상태**: ✅ 확정 (2026-06-01)
+- **추가 확정 (2026-06-10)**: `term_name TEXT` 컬럼 추가 — 화면 표시명. 생성 시 자동생성값 저장(A안 고정 패턴), P5가 수정 가능. `term_id`(ERP키)·`id`(FK기준)는 불변.
+  - 자동생성 규칙: `INTERIM{N}` → `{year}년 {N}차 평가` / `FINAL` → `{year}년 기말 평가` (N은 1 이상 제한 없음)
+  - 구현 시점: DB 컬럼은 현재 반영 완료 / 자동생성 함수(`lib/termNameGenerator.ts`)는 Phase 10 CRUD 연동 시 작성
+  - 향후 B안(회사별 템플릿) 도입 검토 예정 — 기존 레코드는 이미 저장된 값 유지(영향 없음)
+- **변경 시 영향**: FK 참조 전체 재구성 (samples·populations·rcm_term_assignments 등 7개 테이블) — `term_name`은 FK 연결 없으므로 해당 없음
 
-### R2. 통제코드(ctrl_no) 형식
-- **내용**: `FR-C-1-3-1` 형식의 RCM 통제코드. rcm_controls ↔ rcm_dept_map ↔ rcm_default_owners ↔ samples 등 모든 조인 기준
-- **현재 설계**: VARCHAR(50), 실제 RCM 402건 코드 그대로 사용
-- **상태**: ✅ 확정 (Phase 7-A, 2026-06-01)
-- **변경 시 영향**: 전체 FK 체인 파괴. seeds/rcm_controls.sql 재작성 필요
+### R2. 통제코드(ctrl_code) 형식 + 멀티테넌시
+- **내용**: 통제코드는 `company_id`와 복합 UNIQUE. 금강: `FR-C-1-3-1`, 자회사: `FR-30-C01` 등 형식 무관.
+- **현재 설계**: `UNIQUE(company_id, ctrl_code)` — TEXT 자유 형식, 회사별 코드 충돌 없음
+- **멀티테넌시 구조 (2026-06-10 확정)**:
+  - `companies` 테이블 신설 (루트) → 모든 테이블에 `company_id UUID NOT NULL` 추가
+  - 자연키 FK → 복합 FK: `FOREIGN KEY (company_id, ctrl_code) REFERENCES rcm_controls(company_id, ctrl_code)`
+  - RLS 헬퍼 `current_company_id()` 추가 → 모든 정책에서 회사 격리 자동 적용
+  - 자회사 배포 시: `seeds/rcm_controls.sql`만 해당 코드 형식으로 교체 (구조 변경 없음)
+- **상태**: ✅ 확정 (2026-06-10) — `001_initial_schema.sql` + `002_rls_policies.sql` + `docs/DB_스키마.md` 반영 완료
+- **변경 시 영향**: companies 루트가 잠겨 있으므로 자회사 코드 형식은 언제든 자유. 멀티테넌시 구조 자체 변경은 전체 FK 재구성 필요
 
 ### R3. Status 8단계 enum 값
 - **내용**: `SAMPLE_SELECTED → AUTO_COLLECTED → MANUAL_UPLOADED → AI_VALIDATED → EVIDENCE_CONFIRMED → AI_DRAFTED → EVALUATED → AUDIT_PACKAGED`
@@ -48,11 +56,13 @@
 - **상태**: ✅ 확정 (IA_DESIGN.md v5, 2026-05-20)
 - **변경 시 영향**: 전체 RLS 정책 002_rls_policies.sql 재작성 필요
 
-### R6. eval_terms의 term_type (평가 모드 3종)
-- **내용**: `mid1 / mid2 / final`. 기말 평가 시 샘플링 SKIP 분기가 이 값으로 처리됨
-- **현재 설계**: ENUM('mid1', 'mid2', 'final')
-- **상태**: ✅ 확정 (IA_DESIGN.md v5, 2026-05-20)
-- **변경 시 영향**: 기말 평가 흐름 분기 로직 전면 재작성
+### R6. eval_terms의 eval_mode (평가 모드)
+- **내용**: 기말 평가 시 샘플링 SKIP 분기가 이 값으로 처리됨
+- **현재 설계**: `CHECK (eval_mode ~ '^(INTERIM[1-9][0-9]*|FINAL)$')` — INTERIM{N} 개방형 + FINAL
+  - INTERIM1·INTERIM2 기본, INTERIM3·INTERIM4 이상도 동일 흐름으로 수용
+  - 분기 로직: `eval_mode === 'FINAL'` → 샘플링 SKIP, 그 외(INTERIM{N}) → 샘플링 수행
+- **상태**: ✅ 확정 (2026-06-10 업데이트 — 개방형 패턴으로 변경)
+- **변경 시 영향**: FINAL 분기 로직은 그대로. INTERIM{N} 추가는 CHECK 자동 수용, 코드 변경 없음
 
 ### R7. populations 테이블의 source_type (ERP vs 수동 구분)
 - **내용**: 모집단 행이 ERP 자동 수신인지 수동 엑셀 업로드인지 구분하는 컬럼
@@ -175,6 +185,7 @@
 | 2026-06-08 | **통제기간 A안 채택 (헤더 전역 셀렉터)** | 차수 토글 제거 → 통제기간 단일 전역 셀렉터. 모든 페이지 useEvalTerm 구독. 마감 규칙 전역 일괄 제어 | components/evalTerms.js, AppLayout.jsx |
 | 2026-06-08 | **R9 전역 통제기간 정합성 (HIGH 신규)** | A1 쿼리 스코프 강제 / A2 쓰기 payload 기간 박제 / A3 서버 쓰기거부 / A4 URL동기화(선택) | RISK_DECISION_LOG.md R9 |
 | 2026-06-08 | **상신 게이트 = 저장/상신 분리 + 2단계(필수/권장)** | 상신대기(DRAFT) 단일상태 / 필수=차단·권장=사유우회 / 일괄상신은 깨끗한 건만 / 기존 status enum으로 충족(마이그레이션 불요) | docs/UI_패턴.md §5 |
+| 2026-06-10 | **R2 멀티테넌시 확정 (company_id 추가)** | companies 테이블 신설 / 전 테이블 company_id 추가 / ctrl_code·dept_code 자연키 → 복합 UNIQUE+FK / RLS current_company_id() 헬퍼 추가 | RISK_DECISION_LOG.md R2, 001_initial_schema.sql, 002_rls_policies.sql, DB_스키마.md |
 
 ---
 

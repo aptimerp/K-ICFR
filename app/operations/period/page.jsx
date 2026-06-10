@@ -7,8 +7,8 @@ import SubPageTabs from "@/components/SubPageTabs";
 import { Calendar, Users, GitBranch, Plus, Download, Upload, CheckCircle2, Clock, Lock } from "lucide-react";
 
 const TABS = [
-  { id: "period",  label: "평가기간 관리" },
-  { id: "orgauth", label: "조직/권한 관리" },
+  { id: "period",        label: "평가기간 관리" },
+  { id: "orgauth",       label: "부서·사원 관리" },
   { id: "approval-line", label: "결재선 관리" },
 ];
 
@@ -183,7 +183,7 @@ function PeriodPageContent() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900">평가관리</h1>
-          <p className="text-sm text-gray-500 mt-1">평가기간 등록 및 조직·권한·결재선을 관리합니다</p>
+          <p className="text-sm text-gray-500 mt-1">평가기간 등록 및 부서·사원·결재선을 관리합니다</p>
         </div>
 
         <SubPageTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />

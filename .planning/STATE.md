@@ -4,7 +4,20 @@
 - **명칭**: 내부회계관리시스템 구축 (Smart-ICM)
 - **PL**: 장한나
 - **시작일**: 2026-05-15
-- **현재 상태**: Phase 8-C-2 (PDF 뷰어 교체 + 파일 미리보기·업로드 안정성) ✅ 완료 (2026-06-09)
+- **현재 상태**: Phase 8-D (DB 설계 재검토 + UI v7 코드 반영) ✅ 완료 (2026-06-10)
+
+---
+
+## Phase 8-D — DB 설계 재검토 + UI v7 코드 반영 ✅ (2026-06-10)
+- **상태**: ✅ 완료 — 빌드 24페이지 PASS, 브라우저 시각 검증 완료
+- **작업 내용**:
+  1. **UI v7 코드 반영**: `조직/권한 관리` → `부서·사원 관리` 탭명 수정, `사용자`+`권한` 사이드바 → `사용자·권한` 1개 통합, `/settings/users` 2탭 통합 페이지로 재작성
+  2. **R2 멀티테넌시**: `companies` 테이블 신설 + 전 16개 테이블 `company_id` 추가 + 자연키(ctrl_code·dept_code) 복합 UNIQUE·FK로 변경
+  3. **RLS 강화**: `current_company_id()` 헬퍼 추가 → 전 정책에 회사 격리 조건 적용
+  4. **R1 표시명**: `eval_terms.term_name TEXT` 추가 — 생성 시 자동생성값 저장, P5 수정 가능 (A안 고정 패턴)
+  5. **R6 eval_mode 개방형**: `CHECK IN ('INTERIM1','INTERIM2','FINAL')` → `CHECK ~ '^(INTERIM[1-9][0-9]*|FINAL)$'` — INTERIM3·4 이상 자동 수용
+  6. **R3 Status 5가지 방안 제시**: A(분산개선)·B(하이브리드이벤트로그)·C(pipeline_stage)·D(상태머신설정화)·E(이벤트소싱) — 미확정, 다음 세션 결정
+- **변경 파일**: `001_initial_schema.sql`, `002_rls_policies.sql`, `DB_스키마.md`, `RISK_DECISION_LOG.md`, `AppLayout.jsx`, `operations/period/page.jsx`, `settings/users/page.jsx`, `HANDOVER.md`
 
 ---
 
@@ -165,8 +178,12 @@
 - **Phase 7-B (IA v7 메뉴 구조 확정): ✅ 완료 (2026-06-01)** ⭐
 - Phase 7-C (Supabase 마이그레이션 실행): 🔜 대기 (홍세민 PM 계정 수령 후)
 - **Phase 8-A (데이터 운영방식 문서 정의): ✅ 완료 (2026-06-02)** ⭐
-- Phase 8-B (UI v7 코드 반영): 🔜 다음 단계
-- Phase 8-C (Supabase CRUD 연동): 🔜 대기 (Supabase 계정 수령 후)
+- **Phase 8-B (M1/M2 결재 UX 재설계): ✅ 완료 (2026-06-08)**
+- **Phase 8-C-1 (상신함 고도화 + EvidenceViewer): ✅ 완료 (2026-06-08)**
+- **Phase 8-C-2 (결재함 표준화 + FileViewer·FileUploader): ✅ 완료 (2026-06-09)**
+- **Phase 8-D (DB 설계 재검토 + UI v7 코드 반영): ✅ 완료 (2026-06-10)** ⭐
+- Phase 8-C-3 (FileUploader Supabase 실연동): 🔜 대기 (계정 수령 후)
+- Phase 7-C (마이그레이션 실행): 🔜 대기 (계정 수령 후)
 - Phase 9 (SAC API 연동): ⏳ 예정
 - Phase 10 (검증 + 배포): ⏳ 예정
 

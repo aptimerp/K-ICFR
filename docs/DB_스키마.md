@@ -1,6 +1,6 @@
 # Smart-ICM Supabase DB 스키마 설계
-> Phase 7 | 2026-05-29 최초 작성 | 2026-06-04 rcm_dept_map → 2테이블 분리 반영
-> IA v7 메뉴 + ERP ICM_SAMPLE_POPULATION_DT 기반 | **현재 테이블 수: 15개**
+> Phase 7 | 2026-05-29 최초 작성 | 2026-06-04 rcm_dept_map 2테이블 분리 | 2026-06-10 company_id 멀티테넌시 추가
+> IA v7 메뉴 + ERP ICM_SAMPLE_POPULATION_DT 기반 | **현재 테이블 수: 16개** (companies 신설)
 
 ---
 
@@ -15,6 +15,7 @@
 7. **평가기간 격리** (R8) — 모든 결재·평가 트랜잭션은 `eval_term_id` FK로 격리. 조회는 항상 `WHERE eval_term_id = 선택기간`. 과거/현재 데이터 비충돌
 8. **거래시점 스냅샷 보존** (R8) — 담당자(상신자·결재자)·조직(부서)은 FK만 두지 말고 **거래 시점의 이름·직위·부서명을 트랜잭션 행에 스냅샷 저장**. 퇴사·부서이동·조직개편에도 과거 화면 정확 재현
 9. **마감기간 조회전용** (R8) — `eval_terms.is_active=false`(마감) 기간은 앱 레벨에서 변경 액션 차단. "마감된 통제기간은 조회만 가능합니다"
+10. **멀티테넌시 (R2 자회사 대응)** — `companies` 테이블을 루트로, 모든 테이블에 `company_id UUID NOT NULL` 컬럼 포함. 자연키(ctrl_code·dept_code 등)는 `(company_id, 코드)` 복합 UNIQUE — 회사간 코드 형식 충돌 없음. RLS 헬퍼 `current_company_id()`로 자동 격리.
 
 ---
 
@@ -22,6 +23,7 @@
 
 | # | 테이블명 | 설명 | IA 메뉴 연결 | 변경 |
 |---|---------|------|-------------|:----:|
+| 0 | **`companies`** | 회사 마스터 (멀티테넌시 루트) | — | 🆕 2026-06-10 |
 | 1 | `eval_terms` | 평가기간 마스터 | 1️⃣ 평가기간 관리 | |
 | 2 | `departments` | 부서 마스터 | 1️⃣ **부서·사원 관리** (ERP 수신 원본) | |
 | 3 | `users` | 사용자 (P1~P5 페르소나) | 6️⃣ **사용자·권한 > 사용자 관리** | |
@@ -39,7 +41,30 @@
 | 15 | `audit_logs` | 전체 변경 이력 | 6️⃣ 로그 | |
 
 > ⚠️ **2026-06-04 변경**: `rcm_dept_map` 1개 → `rcm_default_owners` + `rcm_term_assignments` 2개로 분리.
-> 기존 `supabase/migrations/001_initial_schema.sql`의 `rcm_dept_map` DDL은 004번 마이그레이션으로 교체 예정.
+> ⭐ **2026-06-10 변경**: `companies` 테이블 신설 + 전 테이블 `company_id` 추가 (R2 자회사 대응).
+
+---
+
+## 0. `companies` — 회사 마스터 🆕 (2026-06-10)
+
+```sql
+CREATE TABLE companies (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_code TEXT NOT NULL UNIQUE,    -- 예: 'KKG'(금강공업), 'KKG_SUB1'(자회사1)
+  company_name TEXT NOT NULL,
+  is_active    BOOL NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ DEFAULT now()
+);
+
+-- 금강공업 기본 레코드
+INSERT INTO companies (company_code, company_name) VALUES ('KKG', '금강공업');
+```
+
+> **멀티테넌시 동작 방식**:
+> - 모든 테이블에 `company_id UUID NOT NULL REFERENCES companies(id)` 추가
+> - 자연키(ctrl_code·dept_code 등)는 `UNIQUE(company_id, 코드)` 복합 제약 — 회사별 코드 형식 독립
+> - FK 참조도 복합: `FOREIGN KEY (company_id, ctrl_code) REFERENCES rcm_controls(company_id, ctrl_code)`
+> - RLS 헬퍼 `current_company_id()`가 모든 정책에서 회사 격리 자동 적용
 
 ---
 
@@ -48,18 +73,23 @@
 ```sql
 CREATE TABLE eval_terms (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  term_id       TEXT NOT NULL UNIQUE,         -- ERP TERMID 대응 (예: '2025')
+  company_id    UUID NOT NULL REFERENCES companies(id),
+  term_id       TEXT NOT NULL,                -- ERP TERMID 대응 (예: '2025'), 불변
+  term_name     TEXT,                         -- 화면 표시명. 생성 시 자동생성값 저장, P5 수정 가능
   term_year     INT  NOT NULL,                -- 평가연도
   term_cnt      INT  NOT NULL DEFAULT 0,      -- 회차: ERP TERMCNT 대응
-  eval_mode     TEXT NOT NULL CHECK (eval_mode IN ('INTERIM1','INTERIM2','FINAL')),
+  eval_mode     TEXT NOT NULL CHECK (eval_mode ~ '^(INTERIM[1-9][0-9]*|FINAL)$'),
+  -- INTERIM{N}: 중간 N차 (N ≥ 1, 상한 없음) / FINAL: 기말
+  -- term_name 자동생성: INTERIM{N} → "{year}년 {N}차 평가" / FINAL → "{year}년 기말 평가"
   entity_code   TEXT NOT NULL DEFAULT '10000',-- ERP ENTITY_CODE
   start_date    DATE NOT NULL,
   end_date      DATE NOT NULL,
   is_active     BOOL NOT NULL DEFAULT false,
   created_at    TIMESTAMPTZ DEFAULT now(),
-  updated_at    TIMESTAMPTZ DEFAULT now()
+  updated_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(company_id, term_id)
 );
-CREATE INDEX idx_eval_terms_active ON eval_terms(is_active, term_year);
+CREATE INDEX idx_eval_terms_active ON eval_terms(company_id, is_active, term_year);
 ```
 
 ---
@@ -69,12 +99,14 @@ CREATE INDEX idx_eval_terms_active ON eval_terms(is_active, term_year);
 ```sql
 CREATE TABLE departments (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  dept_code     TEXT NOT NULL UNIQUE,         -- ERP DEPT_CODE 대응
+  company_id    UUID NOT NULL REFERENCES companies(id),
+  dept_code     TEXT NOT NULL,                -- ERP DEPT_CODE 대응
   dept_name     TEXT NOT NULL,
   parent_code   TEXT,
   entity_code   TEXT NOT NULL DEFAULT '10000',
-  is_active     BOOL NOT NULL DEFAULT true,
-  created_at    TIMESTAMPTZ DEFAULT now()
+  is_active     BOOL NOT NULL DEFAULT true,    -- 물리 삭제 금지 (R8)
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(company_id, dept_code)
 );
 ```
 
@@ -85,15 +117,18 @@ CREATE TABLE departments (
 ```sql
 CREATE TABLE users (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  emp_no        TEXT NOT NULL UNIQUE,         -- 사번 (ERP 연동 키)
+  company_id    UUID NOT NULL REFERENCES companies(id),
+  emp_no        TEXT NOT NULL,                -- 사번 (ERP 연동 키)
   emp_name      TEXT NOT NULL,
-  email         TEXT UNIQUE,
-  dept_code     TEXT REFERENCES departments(dept_code),
+  email         TEXT,
+  dept_code     TEXT,
   persona       TEXT NOT NULL CHECK (persona IN ('P1','P2','P3','P4','P5')),
   -- P1=통제수행자 P2=통제책임자 P3=내부회계평가자 P4=감사 P5=내부회계팀
   is_active     BOOL NOT NULL DEFAULT true,
   created_at    TIMESTAMPTZ DEFAULT now(),
-  updated_at    TIMESTAMPTZ DEFAULT now()
+  updated_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(company_id, emp_no),
+  FOREIGN KEY (company_id, dept_code) REFERENCES departments(company_id, dept_code)
 );
 -- SAC 인증 연동 후 auth.users.id 매핑 예정 (Phase 8)
 ```
@@ -105,7 +140,8 @@ CREATE TABLE users (
 ```sql
 CREATE TABLE rcm_controls (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  ctrl_code        TEXT NOT NULL UNIQUE,      -- 예: 'FR-C-1-1-1', 'IT-C-2-1-1'
+  company_id       UUID NOT NULL REFERENCES companies(id),
+  ctrl_code        TEXT NOT NULL,             -- 예: 금강 'FR-C-1-1-1', 자회사 'FR-30-C01' (형식 무관)
   ctrl_title       TEXT NOT NULL,             -- 통제명
   ctrl_category    TEXT,                      -- 대분류
   ctrl_subcategory TEXT,                      -- 중분류
@@ -120,9 +156,10 @@ CREATE TABLE rcm_controls (
   is_key           BOOL NOT NULL DEFAULT true,-- 핵심통제(Key) 여부
   is_active        BOOL NOT NULL DEFAULT true,
   created_at       TIMESTAMPTZ DEFAULT now(),
-  updated_at       TIMESTAMPTZ DEFAULT now()
+  updated_at       TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(company_id, ctrl_code)              -- 통제코드는 회사별 고유 (형식 무관)
 );
-CREATE INDEX idx_rcm_ctrl_kind ON rcm_controls(ctrl_kind);
+CREATE INDEX idx_rcm_ctrl_kind ON rcm_controls(company_id, ctrl_kind);
 ```
 
 > `rcm_full_extracted.json` 402건 시딩 대상
@@ -138,16 +175,19 @@ CREATE INDEX idx_rcm_ctrl_kind ON rcm_controls(ctrl_kind);
 ```sql
 CREATE TABLE rcm_default_owners (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  ctrl_code     TEXT NOT NULL REFERENCES rcm_controls(ctrl_code),
-  dept_code     TEXT NOT NULL REFERENCES departments(dept_code),
+  company_id    UUID NOT NULL REFERENCES companies(id),
+  ctrl_code     TEXT NOT NULL,
+  dept_code     TEXT NOT NULL,
   default_p1_id UUID REFERENCES users(id),   -- 기본 통제수행자 (P1)
   default_p2_id UUID REFERENCES users(id),   -- 기본 통제책임자 (P2)
   created_at    TIMESTAMPTZ DEFAULT now(),
   updated_at    TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(ctrl_code, dept_code)               -- 통제·부서 조합은 고유
+  UNIQUE(company_id, ctrl_code, dept_code),
+  FOREIGN KEY (company_id, ctrl_code) REFERENCES rcm_controls(company_id, ctrl_code),
+  FOREIGN KEY (company_id, dept_code) REFERENCES departments(company_id, dept_code)
 );
-CREATE INDEX idx_default_owners_ctrl ON rcm_default_owners(ctrl_code);
-CREATE INDEX idx_default_owners_dept ON rcm_default_owners(dept_code);
+CREATE INDEX idx_default_owners_ctrl ON rcm_default_owners(company_id, ctrl_code);
+CREATE INDEX idx_default_owners_dept ON rcm_default_owners(company_id, dept_code);
 ```
 
 ---
@@ -164,9 +204,10 @@ CREATE INDEX idx_default_owners_dept ON rcm_default_owners(dept_code);
 ```sql
 CREATE TABLE rcm_term_assignments (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id      UUID NOT NULL REFERENCES companies(id),
   eval_term_id    UUID NOT NULL REFERENCES eval_terms(id),
-  ctrl_code       TEXT NOT NULL REFERENCES rcm_controls(ctrl_code),
-  dept_code       TEXT NOT NULL REFERENCES departments(dept_code),
+  ctrl_code       TEXT NOT NULL,
+  dept_code       TEXT NOT NULL,
   p1_id           UUID REFERENCES users(id),   -- 현재 차수의 통제수행자
   p2_id           UUID REFERENCES users(id),   -- 현재 차수의 통제책임자
   original_p1_id  UUID REFERENCES users(id),   -- 기본값 원본 (읽기 전용 표시용)
@@ -175,10 +216,12 @@ CREATE TABLE rcm_term_assignments (
   override_reason TEXT,                        -- 변경 사유 (is_override=true 시)
   created_at      TIMESTAMPTZ DEFAULT now(),
   updated_at      TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(eval_term_id, ctrl_code, dept_code)
+  UNIQUE(company_id, eval_term_id, ctrl_code, dept_code),
+  FOREIGN KEY (company_id, ctrl_code) REFERENCES rcm_controls(company_id, ctrl_code),
+  FOREIGN KEY (company_id, dept_code) REFERENCES departments(company_id, dept_code)
 );
-CREATE INDEX idx_term_assign_term ON rcm_term_assignments(eval_term_id);
-CREATE INDEX idx_term_assign_ctrl ON rcm_term_assignments(ctrl_code, dept_code);
+CREATE INDEX idx_term_assign_term ON rcm_term_assignments(company_id, eval_term_id);
+CREATE INDEX idx_term_assign_ctrl ON rcm_term_assignments(company_id, ctrl_code, dept_code);
 ```
 
 > **마이그레이션 계획**: `004_rcm_owner_split.sql`로 신규 작성
@@ -194,6 +237,7 @@ CREATE INDEX idx_term_assign_ctrl ON rcm_term_assignments(ctrl_code, dept_code);
 ```sql
 CREATE TABLE rcm_snapshots (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id    UUID NOT NULL REFERENCES companies(id),
   eval_term_id  UUID NOT NULL REFERENCES eval_terms(id) UNIQUE,
   snapshot_data JSONB NOT NULL,              -- RCM 전체 JSON 스냅샷
   locked_by     UUID REFERENCES users(id),
